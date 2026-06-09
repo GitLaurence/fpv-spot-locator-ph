@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FPV Spot Locator PH</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Top bar ────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <i class="fa-solid fa-drone-front brand-icon"></i>
+      <span class="brand-name">FPV<span class="accent">Spots</span>PH</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="btn-import" title="Import spots">
+        <i class="fa-solid fa-file-import"></i><span class="btn-label">Import</span>
+      </button>
+      <button class="btn-ghost" id="btn-export" title="Export spots">
+        <i class="fa-solid fa-file-export"></i><span class="btn-label">Export</span>
+      </button>
+      <button class="btn-primary" id="btn-add-spot">
+        <i class="fa-solid fa-location-dot"></i><span class="btn-label">Add Spot</span>
+      </button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" />
+  </header>
+
+  <!-- ── Layout wrapper ─────────────────────────── -->
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>Spots <span class="spot-count" id="spot-count">0</span></h2>
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
+          <i class="fa-solid fa-chevron-left" id="sidebar-chevron"></i>
+        </button>
+      </div>
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="search-input" placeholder="Search spots…" autocomplete="off" />
+      </div>
+      <div class="tag-filters" id="tag-filters">
+        <button class="tag-pill active" data-tag="all">All</button>
+        <button class="tag-pill" data-tag="freestyle">Freestyle</button>
+        <button class="tag-pill" data-tag="racing">Racing</button>
+        <button class="tag-pill" data-tag="longrange">Long-range</button>
+        <button class="tag-pill" data-tag="photography">Photography</button>
+      </div>
+      <div class="spot-list" id="spot-list">
+        <div class="empty-state" id="empty-state">
+          <i class="fa-solid fa-map-pin"></i>
+          <p>No spots yet.</p>
+          <p class="sub">Click the map or <strong>Add Spot</strong> to get started.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Map -->
+    <main class="map-container">
+      <div id="map"></div>
+      <div class="map-hint" id="map-hint">
+        <i class="fa-solid fa-hand-pointer"></i> Click anywhere on the map to add a new FPV spot
+      </div>
+    </main>
+
+  </div><!-- /.app-layout -->
+
+  <!-- ── Detail panel ───────────────────────────── -->
+  <aside class="detail-panel" id="detail-panel">
+    <button class="panel-close" id="detail-close"><i class="fa-solid fa-xmark"></i></button>
+    <div class="detail-content" id="detail-content"></div>
+  </aside>
+  <div class="panel-overlay" id="panel-overlay"></div>
+
+  <!-- ── Add / Edit Modal ───────────────────────── -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" id="spot-modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Add FPV Spot</h3>
+        <button class="modal-close" id="modal-close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="spot-form" novalidate>
+        <input type="hidden" id="form-id" />
+        <input type="hidden" id="form-lat" />
+        <input type="hidden" id="form-lng" />
+
+        <div class="form-group">
+          <label for="form-name">Spot Name <span class="req">*</span></label>
+          <input type="text" id="form-name" placeholder="e.g. Luneta Park Field" required />
+          <span class="field-error" id="err-name"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-lat-display">Latitude</label>
+            <input type="text" id="form-lat-display" readonly class="readonly-field" />
+          </div>
+          <div class="form-group">
+            <label for="form-lng-display">Longitude</label>
+            <input type="text" id="form-lng-display" readonly class="readonly-field" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="form-desc">Description</label>
+          <textarea id="form-desc" rows="3" placeholder="Terrain, obstacles, open space details…"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="form-safety">Safety / Legality Notes</label>
+          <textarea id="form-safety" rows="2" placeholder="CAAP rules, no-fly zone warnings…"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-best-time">Best Time to Fly</label>
+            <select id="form-best-time">
+              <option value="any">Any time</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="golden">Golden hour</option>
+              <option value="night">Night</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tags</label>
+            <div class="checkbox-group">
+              <label class="check-item"><input type="checkbox" name="tags" value="freestyle" /> Freestyle</label>
+              <label class="check-item"><input type="checkbox" name="tags" value="racing" /> Racing</label>
+              <label class="check-item"><input type="checkbox" name="tags" value="longrange" /> Long-range</label>
+              <label class="check-item"><input type="checkbox" name="tags" value="photography" /> Photography</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Photos <span class="hint">(max 5, JPEG/PNG)</span></label>
+          <div class="photo-drop-zone" id="photo-drop-zone">
+            <i class="fa-solid fa-camera"></i>
+            <span>Drop photos here or <u>browse</u></span>
+            <input type="file" id="form-photos" accept="image/jpeg,image/png,image/webp" multiple />
+          </div>
+          <div class="photo-preview-grid" id="photo-preview-grid"></div>
+          <span class="field-error" id="err-photos"></span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-ghost" id="form-cancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="form-submit">
+            <i class="fa-solid fa-floppy-disk"></i> Save Spot
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Delete confirm dialog ──────────────────── -->
+  <div class="modal-backdrop" id="confirm-backdrop">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3>Delete Spot?</h3>
+      </div>
+      <p class="confirm-msg">This action cannot be undone.</p>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="confirm-cancel">Cancel</button>
+        <button class="btn-danger" id="confirm-delete"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast ──────────────────────────────────── -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

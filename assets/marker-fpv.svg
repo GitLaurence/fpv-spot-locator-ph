@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 58" width="48" height="58">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Pin body -->
+  <path d="M24 2C13.5 2 5 10.5 5 21c0 14 19 35 19 35s19-21 19-35C43 10.5 34.5 2 24 2z" fill="#0ff" fill-opacity="0.15" stroke="#0ff" stroke-width="2" filter="url(#glow)"/>
+  <!-- Drone icon -->
+  <g transform="translate(24,20)" filter="url(#glow)">
+    <!-- Arms -->
+    <line x1="-9" y1="-9" x2="-5" y2="-5" stroke="#0ff" stroke-width="1.5"/>
+    <line x1="9" y1="-9" x2="5" y2="-5" stroke="#0ff" stroke-width="1.5"/>
+    <line x1="-9" y1="9" x2="-5" y2="5" stroke="#0ff" stroke-width="1.5"/>
+    <line x1="9" y1="9" x2="5" y2="5" stroke="#0ff" stroke-width="1.5"/>
+    <!-- Propeller circles -->
+    <circle cx="-9" cy="-9" r="4" fill="none" stroke="#0ff" stroke-width="1.5"/>
+    <circle cx="9" cy="-9" r="4" fill="none" stroke="#0ff" stroke-width="1.5"/>
+    <circle cx="-9" cy="9" r="4" fill="none" stroke="#0ff" stroke-width="1.5"/>
+    <circle cx="9" cy="9" r="4" fill="none" stroke="#0ff" stroke-width="1.5"/>
+    <!-- Body -->
+    <rect x="-5" y="-5" width="10" height="10" rx="2" fill="#0ff" fill-opacity="0.3" stroke="#0ff" stroke-width="1.5"/>
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="2" fill="#0ff"/>
+  </g>
+</svg>
