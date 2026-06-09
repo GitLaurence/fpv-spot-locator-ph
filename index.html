@@ -16,7 +16,13 @@
   <!-- Sidebar -->
   <aside id="sidebar">
     <div id="sidebar-header">
-      <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> FPV Spot Locator PH</h1>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> FPV Spot Locator PH</h1>
+        <span id="status-indicator" style="display:flex;align-items:center;gap:5px;font-size:0.7rem;">
+          <span id="status-dot" class="status-dot offline"></span>
+          <span id="status-text">Connecting…</span>
+        </span>
+      </div>
       <p>Community-driven. No account needed.</p>
     </div>
     <div id="search-bar">
@@ -35,11 +41,7 @@
       </div>
     </div>
     <div id="sidebar-footer">
-      <button class="btn btn-secondary" id="btn-export"><i class="fa-solid fa-download"></i> Export</button>
-      <label class="btn btn-secondary" style="cursor:pointer">
-        <i class="fa-solid fa-upload"></i> Import
-        <input type="file" id="import-input" accept=".json" style="display:none"/>
-      </label>
+      <button class="btn btn-secondary" id="btn-export"><i class="fa-solid fa-download"></i> Export JSON</button>
     </div>
   </aside>
 
@@ -176,6 +178,7 @@
 <div id="toast-container"></div>
 
 <script src="vendor/leaflet.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,5 +1,19 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Live status dot ── */
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.status-dot.online  { background: #48bb78; box-shadow: 0 0 6px #48bb78; animation: pulse 2s infinite; }
+.status-dot.offline { background: #718096; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
 :root {
   --red: #e53e3e;
   --red-dark: #c53030;
