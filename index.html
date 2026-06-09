@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FPV Spot Locator PH</title>
+  <link rel="stylesheet" href="vendor/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div id="app">
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> FPV Spot Locator PH</h1>
+      <p>Community-driven. No account needed.</p>
+    </div>
+    <div id="search-bar">
+      <input type="text" id="search-input" placeholder="&#xf002;  Search spots…" />
+    </div>
+    <div id="filter-tags">
+      <button class="filter-tag" data-tag="freestyle">Freestyle</button>
+      <button class="filter-tag" data-tag="racing">Racing</button>
+      <button class="filter-tag" data-tag="long-range">Long-range</button>
+      <button class="filter-tag" data-tag="photography">Photography</button>
+    </div>
+    <div id="spots-list">
+      <div class="empty-state" id="empty-state">
+        <i class="fa-solid fa-map-pin"></i>
+        <span>No spots yet.<br>Click the map to add one!</span>
+      </div>
+    </div>
+    <div id="sidebar-footer">
+      <button class="btn btn-secondary" id="btn-export"><i class="fa-solid fa-download"></i> Export</button>
+      <label class="btn btn-secondary" style="cursor:pointer">
+        <i class="fa-solid fa-upload"></i> Import
+        <input type="file" id="import-input" accept=".json" style="display:none"/>
+      </label>
+    </div>
+  </aside>
+
+  <!-- Map -->
+  <div id="map"></div>
+
+  <!-- Toggle sidebar (mobile) -->
+  <button id="toggle-sidebar" title="Toggle list">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <!-- FAB -->
+  <button id="fab-add" title="Add a spot (or click map)">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+  <div id="fab-tooltip">Click anywhere on the map to add a spot</div>
+
+  <!-- Detail Panel (inside #app for correct absolute positioning) -->
+  <div id="detail-panel">
+  <div class="detail-photos" id="detail-photos">
+    <div class="no-photo-placeholder"><i class="fa-solid fa-image"></i></div>
+    <button class="photo-nav-btn prev" id="photo-prev"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="photo-nav-btn next" id="photo-next"><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="photo-nav" id="photo-dots"></div>
+  </div>
+  <div class="detail-header">
+    <h2 id="detail-name">Spot Name</h2>
+    <button class="btn-close" id="detail-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="detail-body">
+    <div class="detail-field">
+      <label><i class="fa-solid fa-location-dot"></i> Coordinates</label>
+      <p class="detail-coords" id="detail-coords">—</p>
+    </div>
+    <div class="detail-field" id="detail-tags-row">
+      <label><i class="fa-solid fa-tags"></i> Tags</label>
+      <div id="detail-tags" class="card-tags"></div>
+    </div>
+    <div class="detail-field">
+      <label><i class="fa-solid fa-clock"></i> Best Time</label>
+      <p id="detail-time">—</p>
+    </div>
+    <div class="detail-field" id="detail-desc-row">
+      <label><i class="fa-solid fa-align-left"></i> Description</label>
+      <p id="detail-desc"></p>
+    </div>
+    <div class="detail-field" id="detail-safety-row">
+      <label><i class="fa-solid fa-triangle-exclamation"></i> Safety / Legality</label>
+      <p id="detail-safety"></p>
+    </div>
+    <div class="detail-field">
+      <label><i class="fa-regular fa-calendar"></i> Date Added</label>
+      <p id="detail-date">—</p>
+    </div>
+  </div>
+  <div class="detail-footer">
+    <button class="btn btn-ghost btn-sm" id="detail-edit"><i class="fa-solid fa-pen"></i> Edit</button>
+    <button class="btn btn-danger btn-sm" id="detail-delete"><i class="fa-solid fa-trash"></i> Delete</button>
+  </div>
+</div>
+</div><!-- /#app -->
+
+<!-- Add/Edit Spot Modal -->
+<div class="modal-overlay" id="spot-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Add New Spot</h2>
+      <button class="modal-close" id="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Coordinates</label>
+        <div class="coords-display" id="modal-coords">Click a location on the map first</div>
+      </div>
+      <div class="form-group">
+        <label for="spot-name">Spot Name <span style="color:var(--red)">*</span></label>
+        <input type="text" id="spot-name" placeholder="e.g. Bataan Nuclear Power Plant Field" maxlength="80"/>
+      </div>
+      <div class="form-group">
+        <label for="spot-desc">Description</label>
+        <textarea id="spot-desc" rows="3" placeholder="Terrain, obstacles, open space…"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="spot-safety">Safety / Legality</label>
+        <textarea id="spot-safety" rows="2" placeholder="CAAP rules, no-fly zone warnings…"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="spot-time">Best Time to Fly</label>
+        <select id="spot-time">
+          <option value="any">Any time</option>
+          <option value="morning">Morning</option>
+          <option value="afternoon">Afternoon</option>
+          <option value="golden-hour">Golden Hour</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tags</label>
+        <div class="tags-grid">
+          <input type="checkbox" class="tag-checkbox" id="tag-freestyle" value="freestyle"/>
+          <label class="tag-label" for="tag-freestyle">Freestyle</label>
+          <input type="checkbox" class="tag-checkbox" id="tag-racing" value="racing"/>
+          <label class="tag-label" for="tag-racing">Racing</label>
+          <input type="checkbox" class="tag-checkbox" id="tag-long-range" value="long-range"/>
+          <label class="tag-label" for="tag-long-range">Long-range</label>
+          <input type="checkbox" class="tag-checkbox" id="tag-photography" value="photography"/>
+          <label class="tag-label" for="tag-photography">Photography</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Photos <span class="photo-count" id="photo-count-label">(0 / 5)</span></label>
+        <input type="file" id="spot-photos" accept="image/jpeg,image/png,image/webp" multiple/>
+        <div class="photo-preview-grid" id="photo-preview-grid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="modal-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Spot</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <p id="confirm-msg">Are you sure?</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" id="confirm-no">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirm-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
