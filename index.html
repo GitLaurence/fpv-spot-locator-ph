@@ -15,6 +15,7 @@
 <div id="app">
   <!-- Sidebar -->
   <aside id="sidebar">
+    <button id="close-sidebar" title="Close menu"><i class="fa-solid fa-xmark"></i></button>
     <div id="sidebar-header">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> FPV Spot Locator PH</h1>
@@ -22,12 +23,12 @@
           <span id="status-dot" class="status-dot offline"></span>
           <span id="status-text">Connecting…</span>
         </span>
-        <button id="close-sidebar" title="Close menu"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <p>Community-driven. No account needed.</p>
     </div>
     <div id="search-bar">
-      <input type="text" id="search-input" placeholder="&#xf002;  Search spots…" />
+      <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
+      <input type="text" id="search-input" placeholder="Search spots…" />
     </div>
     <div id="filter-tags">
       <button class="filter-tag" data-tag="freestyle">Freestyle</button>
