@@ -33,7 +33,7 @@ function uuid() {
 
 // ── Map ───────────────────────────────────────────────────────────────────────
 const map = L.map('map', { zoomControl: false }).setView([12.8797, 121.7740], 6);
-L.control.zoom({ position: 'topright' }).addTo(map);
+L.control.zoom({ position: 'topleft' }).addTo(map);
 
 const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -48,7 +48,7 @@ const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/
 L.control.layers({
   'Map': streetLayer,
   'Satellite': satelliteLayer,
-}, null, { position: 'topright' }).addTo(map);
+}, null, { position: 'topleft' }).addTo(map);
 
 const fpvIcon = L.icon({
   iconUrl: 'assets/marker-fpv.svg',
