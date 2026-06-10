@@ -124,6 +124,7 @@ function openModal(spot) {
   var latlng = spot ? { lat: spot.lat, lng: spot.lng } : pendingLatLng;
   document.getElementById('modal-coords').textContent =
     latlng ? (latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6)) : 'Click a location on the map first';
+  document.getElementById('gmaps-coords').value = '';
   document.getElementById('spot-name').value   = spot ? spot.name : '';
   document.getElementById('spot-desc').value   = spot ? (spot.description || '') : '';
   document.getElementById('spot-safety').value = spot ? (spot.safety || '') : '';
@@ -146,6 +147,50 @@ function closeModal() {
 
 document.getElementById('modal-close-btn').addEventListener('click', closeModal);
 document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+
+// ── Google Maps coordinate paste ────────────────────────────────────────────
+function parseGoogleMapsCoords(input) {
+  input = input.trim();
+
+  // Plain "lat, lng" pair
+  var plain = input.match(/^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (plain) return { lat: parseFloat(plain[1]), lng: parseFloat(plain[2]) };
+
+  // URL containing @lat,lng (standard Google Maps share links)
+  var at = input.match(/@(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+  if (at) return { lat: parseFloat(at[1]), lng: parseFloat(at[2]) };
+
+  // URL with ?q=lat,lng or &q=lat,lng
+  var q = input.match(/[?&]q=(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+  if (q) return { lat: parseFloat(q[1]), lng: parseFloat(q[2]) };
+
+  // URL with !3dlat!4dlng (precise marker location)
+  var bang = input.match(/!3d(-?\d{1,3}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/);
+  if (bang) return { lat: parseFloat(bang[1]), lng: parseFloat(bang[2]) };
+
+  return null;
+}
+
+document.getElementById('gmaps-apply-btn').addEventListener('click', function() {
+  var input = document.getElementById('gmaps-coords').value;
+  if (!input.trim()) return;
+
+  var coords = parseGoogleMapsCoords(input);
+  if (!coords || isNaN(coords.lat) || isNaN(coords.lng) ||
+      coords.lat < -90 || coords.lat > 90 || coords.lng < -180 || coords.lng > 180) {
+    if (/goo\.gl|maps\.app/.test(input)) {
+      toast('Shortened links aren\'t supported — open the link, then copy the full URL or coordinates from the address bar.', 'error');
+    } else {
+      toast('Could not read coordinates from that text.', 'error');
+    }
+    return;
+  }
+
+  pendingLatLng = coords;
+  document.getElementById('modal-coords').textContent = coords.lat.toFixed(6) + ', ' + coords.lng.toFixed(6);
+  map.setView([coords.lat, coords.lng], Math.max(map.getZoom(), 14));
+  toast('Coordinates applied.', 'success');
+});
 spotModal.addEventListener('click', function(e) { if (e.target === spotModal) closeModal(); });
 document.getElementById('modal-save-btn').addEventListener('click', saveSpot);
 

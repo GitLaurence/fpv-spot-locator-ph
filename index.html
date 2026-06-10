@@ -119,6 +119,13 @@
         <div class="coords-display" id="modal-coords">Click a location on the map first</div>
       </div>
       <div class="form-group">
+        <label for="gmaps-coords">Or paste a Google Maps link / coordinates <span class="optional-label">(optional)</span></label>
+        <div class="gmaps-input-row">
+          <input type="text" id="gmaps-coords" placeholder="e.g. https://maps.app.goo.gl/... or 14.5995, 120.9842"/>
+          <button type="button" class="btn btn-secondary btn-sm" id="gmaps-apply-btn">Use</button>
+        </div>
+      </div>
+      <div class="form-group">
         <label for="spot-name">Spot Name <span style="color:var(--red)">*</span></label>
         <input type="text" id="spot-name" placeholder="e.g. Bataan Nuclear Power Plant Field" maxlength="80"/>
       </div>

@@ -330,6 +330,17 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--red); }
 .form-group select option { background: var(--surface); }
 
+.optional-label {
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--text-muted);
+}
+
+.gmaps-input-row { display: flex; gap: 8px; }
+.gmaps-input-row input { flex: 1; min-width: 0; }
+.gmaps-input-row .btn { flex-shrink: 0; }
+
 .coords-display {
   font-size: 0.8rem;
   color: var(--text-muted);
