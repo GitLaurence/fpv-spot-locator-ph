@@ -195,6 +195,22 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
   font-size: 1rem;
 }
 
+#close-sidebar {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-dim, var(--text));
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+#close-sidebar:hover { background: var(--border); }
+
 /* ── Map FAB ── */
 #fab-add {
   position: absolute;
@@ -512,6 +528,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
   }
   #sidebar.open { transform: translateX(0); }
   #toggle-sidebar { display: flex; }
+  #close-sidebar { display: flex; }
 
   /* Leave room for the hamburger button */
   #sidebar-header { padding-left: 60px; position: relative; min-height: 40px; }

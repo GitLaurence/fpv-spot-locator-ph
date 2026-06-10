@@ -443,6 +443,10 @@ document.getElementById('toggle-sidebar').addEventListener('click', function() {
   document.getElementById('sidebar').classList.toggle('open');
 });
 
+document.getElementById('close-sidebar').addEventListener('click', function() {
+  document.getElementById('sidebar').classList.remove('open');
+});
+
 // ── Search & filter ───────────────────────────────────────────────────────────
 document.getElementById('search-input').addEventListener('input', function(e) {
   searchQuery = e.target.value.trim().toLowerCase();
