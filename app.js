@@ -35,10 +35,20 @@ function uuid() {
 const map = L.map('map', { zoomControl: false }).setView([12.8797, 121.7740], 6);
 L.control.zoom({ position: 'topright' }).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 19,
 }).addTo(map);
+
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+  maxZoom: 19,
+});
+
+L.control.layers({
+  'Map': streetLayer,
+  'Satellite': satelliteLayer,
+}, null, { position: 'topright' }).addTo(map);
 
 const fpvIcon = L.icon({
   iconUrl: 'assets/marker-fpv.svg',

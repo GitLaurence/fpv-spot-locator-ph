@@ -468,6 +468,20 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
   border-color: var(--border) !important;
 }
 
+.leaflet-control-layers {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+}
+.leaflet-control-layers-toggle {
+  width: 36px !important;
+  height: 36px !important;
+}
+.leaflet-control-layers-expanded { padding: 8px 12px; }
+.leaflet-control-layers label { font-size: 0.85rem; }
+
 /* ── Loading spinner ── */
 .spinner {
   width: 20px; height: 20px;
@@ -609,6 +623,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 
   /* Leaflet zoom control: smaller, clear of FAB/hamburger */
   .leaflet-control-zoom { margin-top: 12px !important; margin-right: 12px !important; }
+  .leaflet-control-layers { margin-top: 12px !important; margin-right: 12px !important; }
 }
 
 @media (min-width: 769px) {
