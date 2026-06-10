@@ -32,7 +32,8 @@ function uuid() {
 }
 
 // ── Map ───────────────────────────────────────────────────────────────────────
-const map = L.map('map', { zoomControl: true }).setView([12.8797, 121.7740], 6);
+const map = L.map('map', { zoomControl: false }).setView([12.8797, 121.7740], 6);
+L.control.zoom({ position: 'topright' }).addTo(map);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',

@@ -506,14 +506,21 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
     position: absolute;
     z-index: 30;
     height: 100%;
+    width: min(var(--sidebar-w), 85vw);
     transform: translateX(-100%);
+    box-shadow: var(--shadow);
   }
   #sidebar.open { transform: translateX(0); }
   #toggle-sidebar { display: flex; }
 
+  /* Leave room for the hamburger button */
+  #sidebar-header { padding-left: 60px; position: relative; min-height: 40px; }
+  #sidebar-header h1 { font-size: 0.9rem; }
+  #sidebar-header > div { flex-wrap: wrap; gap: 4px; }
+
   #detail-panel {
     width: 100%;
-    height: 70%;
+    height: 75%;
     top: auto;
     bottom: 0;
     right: 0;
@@ -523,9 +530,65 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
     transform: translateY(100%);
   }
   #detail-panel.open { transform: translateY(0); }
+
+  .detail-photos { height: 160px; }
+
+  /* FAB sits clear of bottom-sheet detail panel and safe-area */
+  #fab-add {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
+  }
+  #fab-tooltip {
+    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    max-width: 70vw;
+    white-space: normal;
+  }
+
+  /* Toast above FAB, full width with margins */
+  #toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    align-items: stretch;
+  }
+  .toast { font-size: 0.8rem; }
+
+  /* Modal: full-height sheet on small screens */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 14px 14px 0 0;
+  }
+
+  /* Filter tags scroll horizontally instead of wrapping */
+  #filter-tags {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #filter-tags::-webkit-scrollbar { display: none; }
+  .filter-tag { flex-shrink: 0; }
+
+  /* Leaflet zoom control: smaller, clear of FAB/hamburger */
+  .leaflet-control-zoom { margin-top: 12px !important; margin-right: 12px !important; }
 }
+
 @media (min-width: 769px) {
   #toggle-sidebar { display: none; }
   #sidebar { position: relative; }
   #sidebar.hidden { display: none; }
 }
+
+@media (max-width: 380px) {
+  #sidebar-header h1 { font-size: 0.8rem; }
+  #sidebar-header p { font-size: 0.68rem; }
+  #status-text { display: none; }
+  .card-thumb { height: 60px; }
+}
+
