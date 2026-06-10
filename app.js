@@ -50,16 +50,78 @@ L.control.layers({
   'Satellite': satelliteLayer,
 }, null, { position: 'topleft' }).addTo(map);
 
-const fpvIcon = L.icon({
-  iconUrl: 'assets/marker-fpv.svg',
-  iconSize: [36, 46], iconAnchor: [18, 46],
-  popupAnchor: [0, -46], tooltipAnchor: [18, -30],
-});
+// ── Category legend ──────────────────────────────────────────────────────────
+const LEGEND_LABELS = {
+  'freestyle':   'Freestyle',
+  'racing':      'Racing',
+  'long-range':  'Long-range',
+  'photography': 'Photography',
+};
+
+const legendControl = L.control({ position: 'bottomleft' });
+legendControl.onAdd = function() {
+  var div = L.DomUtil.create('div', 'map-legend');
+  var rows = Object.keys(LEGEND_LABELS).map(function(key) {
+    return '<div class="map-legend-row">' +
+      '<span class="map-legend-dot" style="background:' + TAG_COLORS[key] + '"></span>' +
+      '<span>' + LEGEND_LABELS[key] + '</span></div>';
+  }).join('');
+  rows += '<div class="map-legend-row">' +
+    '<span class="map-legend-dot" style="background:' + DEFAULT_PIN_COLOR + '"></span>' +
+    '<span>Other / Untagged</span></div>';
+  div.innerHTML = '<div class="map-legend-title">Spot Type</div>' + rows;
+  L.DomEvent.disableClickPropagation(div);
+  return div;
+};
+legendControl.addTo(map);
+
+// ── Category colors & marker icons ─────────────────────────────────────────────
+const TAG_COLORS = {
+  'freestyle':   '#9f7aea',
+  'racing':      '#ecc94b',
+  'long-range':  '#4299e1',
+  'photography': '#48bb78',
+};
+const DEFAULT_PIN_COLOR = '#e53e3e';
+
+const PIN_SVG_TEMPLATE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 50" width="36" height="46">' +
+  '<path d="M20 2C12.268 2 6 8.268 6 16c0 10 14 32 14 32s14-22 14-32C34 8.268 27.732 2 20 2z" fill="{{COLOR}}" stroke="#fff" stroke-width="2"/>' +
+  '<circle cx="20" cy="16" r="5" fill="#fff" opacity="0.9"/>' +
+  '<line x1="14" y1="11" x2="9" y2="8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' +
+  '<line x1="26" y1="11" x2="31" y2="8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' +
+  '<line x1="14" y1="21" x2="9" y2="24" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' +
+  '<line x1="26" y1="21" x2="31" y2="24" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' +
+  '<ellipse cx="9" cy="7.5" rx="4" ry="1.5" fill="#fff" opacity="0.7"/>' +
+  '<ellipse cx="31" cy="7.5" rx="4" ry="1.5" fill="#fff" opacity="0.7"/>' +
+  '<ellipse cx="9" cy="24.5" rx="4" ry="1.5" fill="#fff" opacity="0.7"/>' +
+  '<ellipse cx="31" cy="24.5" rx="4" ry="1.5" fill="#fff" opacity="0.7"/>' +
+  '</svg>';
+
+const iconCache = {};
+function getIconForColor(color) {
+  if (!iconCache[color]) {
+    var svg = PIN_SVG_TEMPLATE.replace('{{COLOR}}', color);
+    iconCache[color] = L.icon({
+      iconUrl: 'data:image/svg+xml;base64,' + btoa(svg),
+      iconSize: [36, 46], iconAnchor: [18, 46],
+      popupAnchor: [0, -46], tooltipAnchor: [18, -30],
+    });
+  }
+  return iconCache[color];
+}
+
+function getIconForSpot(spot) {
+  var tags = spot.tags || [];
+  for (var key in TAG_COLORS) {
+    if (tags.includes(key)) return getIconForColor(TAG_COLORS[key]);
+  }
+  return getIconForColor(DEFAULT_PIN_COLOR);
+}
 
 const markerMap = {};
 
 function addMarkerForSpot(spot) {
-  const marker = L.marker([spot.lat, spot.lng], { icon: fpvIcon })
+  const marker = L.marker([spot.lat, spot.lng], { icon: getIconForSpot(spot) })
     .addTo(map)
     .bindTooltip(spot.name, { className: 'spot-tooltip', direction: 'top', offset: [0, -10] });
   marker.on('click', () => openDetailPanel(spot.id));

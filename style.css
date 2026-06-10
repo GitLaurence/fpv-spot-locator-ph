@@ -493,6 +493,34 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 .leaflet-control-layers-expanded { padding: 8px 12px; }
 .leaflet-control-layers label { font-size: 0.85rem; }
 
+/* ── Map legend ── */
+.map-legend {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.map-legend-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.map-legend-row { display: flex; align-items: center; gap: 6px; }
+.map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+
 /* ── Loading spinner ── */
 .spinner {
   width: 20px; height: 20px;
@@ -634,6 +662,9 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 
   /* Leaflet zoom/layers controls: clear of the hamburger toggle button */
   .leaflet-top.leaflet-left { margin-top: 64px !important; }
+  .map-legend { font-size: 0.68rem; padding: 6px 8px; }
+  .map-legend-title { font-size: 0.6rem; }
+  .map-legend-dot { width: 8px; height: 8px; }
 }
 
 @media (min-width: 769px) {
