@@ -30,10 +30,12 @@ create table if not exists public.spots (
 -- 2. Row Level Security
 alter table public.spots enable row level security;
 
-create policy "public_read"   on public.spots for select using (true);
-create policy "owner_insert"  on public.spots for insert with check (auth.uid() = user_id);
-create policy "owner_update"  on public.spots for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "owner_delete"  on public.spots for delete using (auth.uid() = user_id);
+-- Community-maintained map: any authenticated (incl. anonymous) user can
+-- read, create, edit, or delete any spot.
+create policy "public_read"    on public.spots for select using (true);
+create policy "any_user_insert" on public.spots for insert with check (auth.uid() is not null);
+create policy "any_user_update" on public.spots for update using (auth.uid() is not null) with check (auth.uid() is not null);
+create policy "any_user_delete" on public.spots for delete using (auth.uid() is not null);
 
 -- 3. Enable Realtime
 alter publication supabase_realtime add table public.spots;
@@ -48,18 +50,17 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 create policy "photos_public_read" on storage.objects
   for select using (bucket_id = 'spot-photos');
 
--- Users may only upload into a folder named after their own auth uid (storage.objects.name = '<uid>/...')
-create policy "photos_owner_upload" on storage.objects
+-- Any authenticated (incl. anonymous) user can upload photos
+create policy "photos_any_upload" on storage.objects
   for insert with check (
     bucket_id = 'spot-photos'
     and auth.uid() is not null
-    and (storage.foldername(name))[1] = auth.uid()::text
   );
 
--- Users may delete only their own uploaded photos (so spot/photo deletion can clean up storage)
-create policy "photos_owner_delete" on storage.objects
+-- Any authenticated (incl. anonymous) user can delete photos — needed so
+-- editing/deleting someone else's spot can also clean up its photos.
+create policy "photos_any_delete" on storage.objects
   for delete using (
     bucket_id = 'spot-photos'
     and auth.uid() is not null
-    and (storage.foldername(name))[1] = auth.uid()::text
   );

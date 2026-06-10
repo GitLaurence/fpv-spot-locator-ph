@@ -498,9 +498,9 @@ function openDetailPanel(id) {
   document.getElementById('detail-safety').textContent       = spot.safety || '—';
   document.getElementById('detail-safety-row').style.display = spot.safety ? '' : 'none';
 
-  var isOwner = spot.user_id === currentUserId;
-  document.getElementById('detail-edit').style.display   = isOwner ? '' : 'none';
-  document.getElementById('detail-delete').style.display = isOwner ? '' : 'none';
+  // Anyone can edit/delete spots — community-maintained map.
+  document.getElementById('detail-edit').style.display   = '';
+  document.getElementById('detail-delete').style.display = '';
 
   renderDetailPhotos(spot.photos || []);
   detailPanel.classList.add('open');
