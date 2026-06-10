@@ -71,7 +71,11 @@
   </div>
   <div class="detail-header">
     <h2 id="detail-name">Spot Name</h2>
-    <button class="btn-close" id="detail-close" aria-label="Close spot details"><i class="fa-solid fa-xmark"></i></button>
+    <div class="detail-header-actions">
+      <button class="btn-icon" id="detail-edit" aria-label="Edit spot" title="Edit"><i class="fa-solid fa-pen"></i></button>
+      <button class="btn-icon btn-icon-danger" id="detail-delete" aria-label="Delete spot" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      <button class="btn-close" id="detail-close" aria-label="Close spot details"><i class="fa-solid fa-xmark"></i></button>
+    </div>
   </div>
   <div class="detail-body">
     <div class="detail-field">
@@ -98,10 +102,6 @@
       <label><i class="fa-regular fa-calendar"></i> Date Added</label>
       <p id="detail-date">—</p>
     </div>
-  </div>
-  <div class="detail-footer">
-    <button class="btn btn-ghost btn-sm" id="detail-edit"><i class="fa-solid fa-pen"></i> Edit</button>
-    <button class="btn btn-danger btn-sm" id="detail-delete"><i class="fa-solid fa-trash"></i> Delete</button>
   </div>
 </div>
 </div><!-- /#app -->
