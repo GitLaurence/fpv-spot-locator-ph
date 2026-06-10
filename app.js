@@ -50,6 +50,15 @@ L.control.layers({
   'Satellite': satelliteLayer,
 }, null, { position: 'topleft' }).addTo(map);
 
+// ── Category colors & marker icons ─────────────────────────────────────────────
+const TAG_COLORS = {
+  'freestyle':   '#9f7aea',
+  'racing':      '#ecc94b',
+  'long-range':  '#4299e1',
+  'photography': '#48bb78',
+};
+const DEFAULT_PIN_COLOR = '#e53e3e';
+
 // ── Category legend ──────────────────────────────────────────────────────────
 const LEGEND_LABELS = {
   'freestyle':   'Freestyle',
@@ -74,15 +83,6 @@ legendControl.onAdd = function() {
   return div;
 };
 legendControl.addTo(map);
-
-// ── Category colors & marker icons ─────────────────────────────────────────────
-const TAG_COLORS = {
-  'freestyle':   '#9f7aea',
-  'racing':      '#ecc94b',
-  'long-range':  '#4299e1',
-  'photography': '#48bb78',
-};
-const DEFAULT_PIN_COLOR = '#e53e3e';
 
 const PIN_SVG_TEMPLATE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 50" width="36" height="46">' +
   '<path d="M20 2C12.268 2 6 8.268 6 16c0 10 14 32 14 32s14-22 14-32C34 8.268 27.732 2 20 2z" fill="{{COLOR}}" stroke="#fff" stroke-width="2"/>' +
