@@ -179,6 +179,15 @@
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
+<!-- Photo Lightbox -->
+<div id="lightbox-overlay">
+  <button class="lightbox-close" id="lightbox-close"><i class="fa-solid fa-xmark"></i></button>
+  <button class="lightbox-nav prev" id="lightbox-prev"><i class="fa-solid fa-chevron-left"></i></button>
+  <img id="lightbox-img" src="" alt="Spot photo full view"/>
+  <button class="lightbox-nav next" id="lightbox-next"><i class="fa-solid fa-chevron-right"></i></button>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
 <script src="vendor/leaflet.js"></script>
 <script src="vendor/supabase.js"></script>
 <script src="app.js"></script>
