@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard — FPV Spot Locator PH</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="admin.css"/>
+</head>
+<body>
+
+<!-- Login -->
+<div id="admin-login-screen">
+  <div id="admin-login-box">
+    <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> Admin Login</h1>
+    <p>FPV Spot Locator PH</p>
+    <div class="form-group">
+      <label for="admin-email">Email</label>
+      <input type="email" id="admin-email" placeholder="admin@example.com" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label for="admin-password">Password</label>
+      <input type="password" id="admin-password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn btn-primary" id="admin-login-btn" style="width:100%;justify-content:center;">
+      <i class="fa-solid fa-right-to-bracket"></i> Log In
+    </button>
+    <p id="admin-login-error" class="admin-error"></p>
+    <a href="index.html" class="admin-back-link"><i class="fa-solid fa-arrow-left"></i> Back to map</a>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="admin-dashboard">
+  <header id="admin-header">
+    <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> Admin Dashboard</h1>
+    <div class="admin-header-actions">
+      <a href="index.html" class="btn btn-secondary btn-sm"><i class="fa-solid fa-map"></i> View Map</a>
+      <button class="btn btn-ghost btn-sm" id="admin-logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+    </div>
+  </header>
+
+  <main id="admin-main">
+    <section class="admin-section">
+      <h2><i class="fa-solid fa-flag"></i> Deletion Requests <span class="admin-count" id="requests-count">0</span></h2>
+      <div id="requests-list" class="admin-list">
+        <div class="admin-empty" id="requests-empty">No pending requests.</div>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <h2><i class="fa-solid fa-map-pin"></i> All Spots <span class="admin-count" id="spots-count">0</span></h2>
+      <div id="spots-table-wrap">
+        <table id="spots-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Tags</th>
+              <th>Location</th>
+              <th>Photos</th>
+              <th>Date Added</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="spots-tbody"></tbody>
+        </table>
+        <div class="admin-empty" id="spots-empty" style="display:none;">No spots yet.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <p id="confirm-msg">Are you sure?</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" id="confirm-no">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirm-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="vendor/supabase.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

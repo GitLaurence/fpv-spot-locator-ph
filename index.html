@@ -73,7 +73,7 @@
     <h2 id="detail-name">Spot Name</h2>
     <div class="detail-header-actions">
       <button class="btn-icon" id="detail-edit" aria-label="Edit spot" title="Edit"><i class="fa-solid fa-pen"></i></button>
-      <button class="btn-icon btn-icon-danger" id="detail-delete" aria-label="Delete spot" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      <button class="btn-icon btn-icon-danger" id="detail-delete" aria-label="Request deletion" title="Request deletion"><i class="fa-solid fa-flag"></i></button>
       <button class="btn-close" id="detail-close" aria-label="Close spot details"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
@@ -179,6 +179,19 @@
     <div class="btn-row">
       <button class="btn btn-ghost btn-sm" id="confirm-no">Cancel</button>
       <button class="btn btn-danger btn-sm" id="confirm-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Request Deletion Dialog -->
+<div id="request-delete-overlay">
+  <div id="request-delete-box">
+    <h3>Request Deletion</h3>
+    <p>Tell the admins why "<span id="request-delete-spot-name"></span>" should be removed.</p>
+    <textarea id="request-delete-reason" rows="3" maxlength="500" placeholder="Reason (optional)"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" id="request-delete-cancel">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="request-delete-submit">Submit Request</button>
     </div>
   </div>
 </div>

@@ -31,11 +31,14 @@ create table if not exists public.spots (
 alter table public.spots enable row level security;
 
 -- Community-maintained map: any authenticated (incl. anonymous) user can
--- read, create, edit, or delete any spot.
+-- read, create, or edit any spot. Only admins can delete spots directly —
+-- regular users submit a deletion request instead (see section 5).
 create policy "public_read"    on public.spots for select using (true);
 create policy "any_user_insert" on public.spots for insert with check (auth.uid() is not null);
 create policy "any_user_update" on public.spots for update using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy "any_user_delete" on public.spots for delete using (auth.uid() is not null);
+create policy "admin_delete"   on public.spots for delete using (
+  exists (select 1 from public.admins a where a.user_id = auth.uid())
+);
 
 -- 3. Enable Realtime
 alter publication supabase_realtime add table public.spots;
@@ -57,10 +60,60 @@ create policy "photos_any_upload" on storage.objects
     and auth.uid() is not null
   );
 
--- Any authenticated (incl. anonymous) user can delete photos — needed so
--- editing/deleting someone else's spot can also clean up its photos.
+-- Photo deletion: admins (for spot deletion cleanup) or any user (for
+-- replacing/removing photos on edit) — kept open since photos are
+-- non-sensitive and paths are randomly generated.
 create policy "photos_any_delete" on storage.objects
   for delete using (
     bucket_id = 'spot-photos'
     and auth.uid() is not null
   );
+
+-- ============================================================
+-- 5. Admin & deletion-request system
+-- ============================================================
+
+-- Admins table: rows here mark a Supabase Auth user as an admin.
+-- To create an admin:
+--   1. In Supabase dashboard → Authentication → Users → Add user
+--      (create with email + password, "Auto Confirm User" checked).
+--   2. Copy that user's UUID and run:
+--      insert into public.admins (user_id) values ('<uuid-here>');
+create table if not exists public.admins (
+  user_id uuid primary key references auth.users(id) on delete cascade
+);
+
+alter table public.admins enable row level security;
+
+-- A logged-in user can check whether *they themselves* are an admin
+-- (used by the admin dashboard to verify access after login).
+create policy "admin_self_check" on public.admins
+  for select using (auth.uid() = user_id);
+
+-- Deletion requests: any user can request a spot be removed; only
+-- admins can view/manage the request queue.
+create table if not exists public.deletion_requests (
+  id           uuid primary key default gen_random_uuid(),
+  spot_id      uuid references public.spots(id) on delete cascade,
+  spot_name    text not null,
+  reason       text default '',
+  requested_by uuid references auth.users(id) on delete set null,
+  status       text default 'pending' check (status in ('pending', 'resolved', 'dismissed')),
+  created_at   timestamptz default now(),
+
+  constraint deletion_reason_len check (char_length(reason) <= 500)
+);
+
+alter table public.deletion_requests enable row level security;
+
+create policy "request_insert" on public.deletion_requests
+  for insert with check (auth.uid() is not null);
+
+create policy "admin_select_requests" on public.deletion_requests
+  for select using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
+create policy "admin_update_requests" on public.deletion_requests
+  for update using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
+create policy "admin_delete_requests" on public.deletion_requests
+  for delete using (exists (select 1 from public.admins a where a.user_id = auth.uid()));

@@ -614,19 +614,31 @@ document.getElementById('detail-edit').addEventListener('click', function() {
   openModal(spot);
 });
 
-document.getElementById('detail-delete').addEventListener('click', async function() {
+document.getElementById('detail-delete').addEventListener('click', function() {
   var spot = spots.find(function(s) { return s.id === activeSpotId; });
   if (!spot) return;
-  var ok = await showConfirm('Delete "' + spot.name + '"? This cannot be undone.');
-  if (!ok) return;
-  var del = await db.from('spots').delete().eq('id', spot.id);
-  if (del.error) { toast('Delete failed: ' + del.error.message, 'error'); return; }
-  await deletePhotosFromStorage(spot.photos);
-  spots = spots.filter(function(s) { return s.id !== spot.id; });
-  removeMarker(spot.id);
-  closeDetailPanel();
-  renderSpotsList();
-  toast('Spot deleted.');
+  document.getElementById('request-delete-spot-name').textContent = spot.name;
+  document.getElementById('request-delete-reason').value = '';
+  document.getElementById('request-delete-overlay').classList.add('open');
+});
+
+document.getElementById('request-delete-cancel').addEventListener('click', function() {
+  document.getElementById('request-delete-overlay').classList.remove('open');
+});
+
+document.getElementById('request-delete-submit').addEventListener('click', async function() {
+  var spot = spots.find(function(s) { return s.id === activeSpotId; });
+  if (!spot) return;
+  var reason = document.getElementById('request-delete-reason').value.trim();
+  var ins = await db.from('deletion_requests').insert({
+    spot_id:      spot.id,
+    spot_name:    spot.name,
+    reason:       reason,
+    requested_by: currentUserId
+  });
+  if (ins.error) { toast('Request failed: ' + ins.error.message, 'error'); return; }
+  document.getElementById('request-delete-overlay').classList.remove('open');
+  toast('Deletion request submitted. An admin will review it.');
 });
 
 // ── FAB ───────────────────────────────────────────────────────────────────────
