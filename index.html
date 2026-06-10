@@ -15,7 +15,7 @@
 <div id="app">
   <!-- Sidebar -->
   <aside id="sidebar">
-    <button id="close-sidebar" title="Close menu"><i class="fa-solid fa-xmark"></i></button>
+    <button id="close-sidebar" title="Close menu" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
     <div id="sidebar-header">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <h1><i class="fa-solid fa-drone" style="color:#e53e3e"></i> FPV Spot Locator PH</h1>
@@ -51,12 +51,12 @@
   <div id="map"></div>
 
   <!-- Toggle sidebar (mobile) -->
-  <button id="toggle-sidebar" title="Toggle list">
+  <button id="toggle-sidebar" title="Toggle list" aria-label="Toggle spot list">
     <i class="fa-solid fa-bars"></i>
   </button>
 
   <!-- FAB -->
-  <button id="fab-add" title="Add a spot (or click map)">
+  <button id="fab-add" title="Add a spot (or click map)" aria-label="Add a new spot">
     <i class="fa-solid fa-plus"></i>
   </button>
   <div id="fab-tooltip">Click anywhere on the map to add a spot</div>
@@ -65,13 +65,13 @@
   <div id="detail-panel">
   <div class="detail-photos" id="detail-photos">
     <div class="no-photo-placeholder"><i class="fa-solid fa-image"></i></div>
-    <button class="photo-nav-btn prev" id="photo-prev"><i class="fa-solid fa-chevron-left"></i></button>
-    <button class="photo-nav-btn next" id="photo-next"><i class="fa-solid fa-chevron-right"></i></button>
+    <button class="photo-nav-btn prev" id="photo-prev" aria-label="Previous photo"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="photo-nav-btn next" id="photo-next" aria-label="Next photo"><i class="fa-solid fa-chevron-right"></i></button>
     <div class="photo-nav" id="photo-dots"></div>
   </div>
   <div class="detail-header">
     <h2 id="detail-name">Spot Name</h2>
-    <button class="btn-close" id="detail-close"><i class="fa-solid fa-xmark"></i></button>
+    <button class="btn-close" id="detail-close" aria-label="Close spot details"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="detail-body">
     <div class="detail-field">
@@ -111,7 +111,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2 id="modal-title">Add New Spot</h2>
-      <button class="modal-close" id="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+      <button class="modal-close" id="modal-close-btn" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -188,10 +188,10 @@
 
 <!-- Photo Lightbox -->
 <div id="lightbox-overlay">
-  <button class="lightbox-close" id="lightbox-close"><i class="fa-solid fa-xmark"></i></button>
-  <button class="lightbox-nav prev" id="lightbox-prev"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close image viewer"><i class="fa-solid fa-xmark"></i></button>
+  <button class="lightbox-nav prev" id="lightbox-prev" aria-label="Previous image"><i class="fa-solid fa-chevron-left"></i></button>
   <img id="lightbox-img" src="" alt="Spot photo full view"/>
-  <button class="lightbox-nav next" id="lightbox-next"><i class="fa-solid fa-chevron-right"></i></button>
+  <button class="lightbox-nav next" id="lightbox-next" aria-label="Next image"><i class="fa-solid fa-chevron-right"></i></button>
   <div class="lightbox-counter" id="lightbox-counter"></div>
 </div>
 

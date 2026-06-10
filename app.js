@@ -235,6 +235,21 @@ function renderPhotoPreview() {
   });
 }
 
+// ── Storage helpers ────────────────────────────────────────────────────────────
+function storagePathFromUrl(url) {
+  var marker = '/object/public/' + PHOTO_BUCKET + '/';
+  var idx = url.indexOf(marker);
+  return idx === -1 ? null : url.slice(idx + marker.length);
+}
+
+async function deletePhotosFromStorage(urls) {
+  var paths = (urls || []).map(storagePathFromUrl).filter(Boolean);
+  if (!paths.length) return;
+  try {
+    await db.storage.from(PHOTO_BUCKET).remove(paths);
+  } catch (err) { /* best-effort cleanup */ }
+}
+
 // ── Upload photos to Supabase Storage ─────────────────────────────────────────
 async function uploadPendingPhotos() {
   var urls = [];
@@ -278,8 +293,8 @@ async function saveSpot() {
       best_time:   document.getElementById('spot-time').value,
       tags:        tags,
       photos:      photoUrls,
-      lat:         existing ? existing.lat : pendingLatLng.lat,
-      lng:         existing ? existing.lng : pendingLatLng.lng,
+      lat:         pendingLatLng ? pendingLatLng.lat : existing.lat,
+      lng:         pendingLatLng ? pendingLatLng.lng : existing.lng,
       user_id:     currentUserId,
       date_added:  existing ? existing.date_added : new Date().toISOString(),
     };
@@ -287,6 +302,8 @@ async function saveSpot() {
     if (editingId) {
       var upd = await db.from('spots').update(payload).eq('id', editingId);
       if (upd.error) throw upd.error;
+      var removedPhotos = (existing.photos || []).filter(function(url) { return !photoUrls.includes(url); });
+      await deletePhotosFromStorage(removedPhotos);
       var idx = spots.findIndex(function(s) { return s.id === editingId; });
       if (idx !== -1) spots[idx] = payload;
       removeMarker(editingId);
@@ -527,6 +544,7 @@ document.getElementById('detail-delete').addEventListener('click', async functio
   if (!ok) return;
   var del = await db.from('spots').delete().eq('id', spot.id);
   if (del.error) { toast('Delete failed: ' + del.error.message, 'error'); return; }
+  await deletePhotosFromStorage(spot.photos);
   spots = spots.filter(function(s) { return s.id !== spot.id; });
   removeMarker(spot.id);
   closeDetailPanel();
@@ -551,9 +569,14 @@ document.getElementById('close-sidebar').addEventListener('click', function() {
 });
 
 // ── Search & filter ───────────────────────────────────────────────────────────
+var searchDebounceTimer = null;
 document.getElementById('search-input').addEventListener('input', function(e) {
-  searchQuery = e.target.value.trim().toLowerCase();
-  renderSpotsList();
+  var value = e.target.value;
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(function() {
+    searchQuery = value.trim().toLowerCase();
+    renderSpotsList();
+  }, 200);
 });
 document.querySelectorAll('.filter-tag').forEach(function(btn) {
   btn.addEventListener('click', function() {
