@@ -277,7 +277,7 @@ document.getElementById('spot-photos').addEventListener('change', async function
   var remaining = 5 - pendingPhotos.length;
   if (files.length > remaining) toast('Max 5 photos. ' + remaining + ' slot(s) left.', 'error');
   for (var f of files.slice(0, remaining)) {
-    if (f.size > 4 * 1024 * 1024) { toast(f.name + ' exceeds 4 MB, skipped.', 'error'); continue; }
+    if (f.size > 20 * 1024 * 1024) { toast(f.name + ' exceeds 20 MB, skipped.', 'error'); continue; }
     var dataUrl = await readFileAsDataUrl(f);
     pendingPhotos.push({ dataUrl: dataUrl, name: f.name, uploaded: false });
   }

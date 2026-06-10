@@ -40,7 +40,7 @@ alter publication supabase_realtime add table public.spots;
 
 -- 4. Storage bucket (run if you prefer SQL over the dashboard)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values ('spot-photos', 'spot-photos', true, 4194304, array['image/jpeg','image/png','image/webp'])
+  values ('spot-photos', 'spot-photos', true, 20971520, array['image/jpeg','image/png','image/webp'])
   on conflict (id) do update set
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
