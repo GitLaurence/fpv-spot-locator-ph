@@ -147,6 +147,14 @@ function toast(msg, type = 'success') {
   setTimeout(() => el.remove(), 3200);
 }
 
+function statusToast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('status-toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
 // ── Confirm dialog ────────────────────────────────────────────────────────────
 function showConfirm(msg) {
   return new Promise(resolve => {
@@ -169,12 +177,19 @@ function showConfirm(msg) {
 }
 
 // ── Connection status ─────────────────────────────────────────────────────────
+let wasConnected = false;
 function setStatus(connected) {
-  const dot  = document.getElementById('status-dot');
-  const text = document.getElementById('status-text');
+  const dot      = document.getElementById('status-dot');
+  const text     = document.getElementById('status-text');
+  const overlay  = document.getElementById('connecting-overlay');
   if (!dot) return;
   dot.className    = 'status-dot ' + (connected ? 'online' : 'offline');
   text.textContent = connected ? 'Live' : 'Connecting…';
+  overlay.classList.toggle('open', !connected);
+  if (connected && !wasConnected) {
+    statusToast('Connected — live updates enabled.', 'success');
+  }
+  wasConnected = connected;
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
