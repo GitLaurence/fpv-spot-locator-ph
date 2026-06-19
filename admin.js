@@ -121,9 +121,18 @@ document.getElementById('admin-logout-btn').addEventListener('click', async func
 });
 
 // ── Data loading ──────────────────────────────────────────────────────────────
+let allSpots = [];
+
 async function loadAll() {
+  const loading = document.getElementById('admin-loading');
+  loading.classList.remove('hidden');
   await Promise.all([loadRequests(), loadSpots()]);
+  loading.classList.add('hidden');
 }
+
+document.getElementById('spots-search').addEventListener('input', function() {
+  filterSpots(this.value.trim().toLowerCase());
+});
 
 async function loadRequests() {
   const res = await db.from('deletion_requests')
@@ -189,16 +198,30 @@ async function dismissRequest(req) {
 async function loadSpots() {
   const res = await db.from('spots').select('*').order('date_added', { ascending: false });
 
-  const tbody = document.getElementById('spots-tbody');
-  const empty = document.getElementById('spots-empty');
-  const count = document.getElementById('spots-count');
-
   if (res.error) { toast('Failed to load spots: ' + res.error.message, 'error'); return; }
 
-  const spots = res.data || [];
-  count.textContent = spots.length;
+  allSpots = res.data || [];
+  document.getElementById('spots-count').textContent = allSpots.length;
+  document.getElementById('spots-empty').style.display = allSpots.length ? 'none' : '';
+  document.getElementById('spots-search').value = '';
+  renderSpots(allSpots);
+}
+
+function filterSpots(query) {
+  if (!query) { renderSpots(allSpots); return; }
+  const filtered = allSpots.filter(s =>
+    s.name.toLowerCase().includes(query) ||
+    (s.tags || []).some(t => t.toLowerCase().includes(query))
+  );
+  renderSpots(filtered);
+  document.getElementById('spots-no-match').style.display = filtered.length ? 'none' : '';
+}
+
+function renderSpots(spots) {
+  const tbody = document.getElementById('spots-tbody');
+  const noMatch = document.getElementById('spots-no-match');
   tbody.innerHTML = '';
-  empty.style.display = spots.length ? 'none' : '';
+  if (noMatch) noMatch.style.display = 'none';
 
   spots.forEach(spot => {
     const tr = document.createElement('tr');

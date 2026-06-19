@@ -43,6 +43,12 @@
     </div>
   </header>
 
+  <!-- Loading overlay -->
+  <div id="admin-loading" class="admin-loading">
+    <span class="spinner"></span>
+    <p>Loading dashboard…</p>
+  </div>
+
   <main id="admin-main">
     <section class="admin-section">
       <h2><i class="fa-solid fa-flag"></i> Deletion Requests <span class="admin-count" id="requests-count">0</span></h2>
@@ -52,7 +58,13 @@
     </section>
 
     <section class="admin-section">
-      <h2><i class="fa-solid fa-map-pin"></i> All Spots <span class="admin-count" id="spots-count">0</span></h2>
+      <div class="admin-section-header">
+        <h2><i class="fa-solid fa-map-pin"></i> All Spots <span class="admin-count" id="spots-count">0</span></h2>
+        <div class="admin-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="spots-search" placeholder="Search spots…"/>
+        </div>
+      </div>
       <div id="spots-table-wrap">
         <table id="spots-table">
           <thead>
@@ -68,6 +80,7 @@
           <tbody id="spots-tbody"></tbody>
         </table>
         <div class="admin-empty" id="spots-empty" style="display:none;">No spots yet.</div>
+        <div class="admin-empty" id="spots-no-match" style="display:none;">No spots match your search.</div>
       </div>
     </section>
   </main>
