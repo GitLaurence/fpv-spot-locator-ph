@@ -65,7 +65,7 @@ body {
 .admin-loading.hidden { display: none; }
 
 /* ── Dashboard ── */
-#admin-dashboard { display: none; max-width: 1000px; margin: 0 auto; padding: 20px; }
+#admin-dashboard { display: none; width: 100%; margin: 0 auto; padding: 20px 32px; }
 #admin-header {
   display: flex;
   align-items: center;
@@ -165,8 +165,8 @@ body {
   padding: 10px 14px;
   text-align: left;
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
 }
+#spots-table th { white-space: nowrap; }
 #spots-table th { color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
 #spots-table tbody tr:last-child td { border-bottom: none; }
 #spots-table td:nth-child(3) { white-space: normal; }
