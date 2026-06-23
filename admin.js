@@ -217,25 +217,58 @@ function filterSpots(query) {
   document.getElementById('spots-no-match').style.display = filtered.length ? 'none' : '';
 }
 
+const _adminMiniMaps = [];
+
 function renderSpots(spots) {
   const tbody = document.getElementById('spots-tbody');
   const noMatch = document.getElementById('spots-no-match');
   tbody.innerHTML = '';
   if (noMatch) noMatch.style.display = 'none';
 
+  _adminMiniMaps.forEach(m => m.remove());
+  _adminMiniMaps.length = 0;
+
   spots.forEach(spot => {
     const tr = document.createElement('tr');
     const tags = (spot.tags || []).map(t => TAG_LABELS[t] || t).join(', ') || '—';
+    const mapId = 'minimap-' + spot.id;
     tr.innerHTML =
       '<td>' + escapeHtml(spot.name) + '</td>' +
       '<td>' + escapeHtml(tags) + '</td>' +
-      '<td>' + spot.lat.toFixed(5) + ', ' + spot.lng.toFixed(5) + '</td>' +
+      '<td>' +
+        '<div class="mini-map-cell" title="' + spot.lat.toFixed(5) + ', ' + spot.lng.toFixed(5) + '">' +
+          '<div class="mini-map" id="' + mapId + '"></div>' +
+          '<div class="mini-map-coords">' + spot.lat.toFixed(4) + ', ' + spot.lng.toFixed(4) + '</div>' +
+        '</div>' +
+      '</td>' +
       '<td>' + (spot.photos ? spot.photos.length : 0) + '</td>' +
       '<td>' + (spot.date_added ? new Date(spot.date_added).toLocaleDateString() : '—') + '</td>' +
       '<td><button class="btn btn-danger btn-sm" data-action="delete-spot"><i class="fa-solid fa-trash"></i></button></td>';
 
     tr.querySelector('[data-action="delete-spot"]').addEventListener('click', () => deleteSpot(spot));
     tbody.appendChild(tr);
+
+    requestAnimationFrame(() => {
+      const el = document.getElementById(mapId);
+      if (!el) return;
+      const mm = L.map(el, {
+        center: [spot.lat, spot.lng],
+        zoom: 14,
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false,
+        boxZoom: false,
+        keyboard: false,
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mm);
+      L.circleMarker([spot.lat, spot.lng], {
+        radius: 6, fillColor: '#e53e3e', fillOpacity: 0.9, color: '#e53e3e', weight: 2,
+      }).addTo(mm);
+      _adminMiniMaps.push(mm);
+    });
   });
 }
 
