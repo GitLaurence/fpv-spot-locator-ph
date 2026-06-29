@@ -20,6 +20,9 @@ let activeSpotId  = null;
 let photoIndex    = 0;
 let filterTags    = new Set();
 let searchQuery   = '';
+let sortMode      = 'newest';
+let userLocation  = null;
+let userMarker    = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function uuid() {
@@ -29,6 +32,22 @@ function uuid() {
         const r = Math.random() * 16 | 0;
         return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
       });
+}
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  var R = 6371;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(km) {
+  if (km < 1) return Math.round(km * 1000) + ' m';
+  if (km < 10) return km.toFixed(1) + ' km';
+  return Math.round(km) + ' km';
 }
 
 // ── Map ───────────────────────────────────────────────────────────────────────
@@ -410,19 +429,44 @@ async function saveSpot() {
 
 // ── Spot list ─────────────────────────────────────────────────────────────────
 function filteredSpots() {
-  return spots.filter(function(s) {
+  var result = spots.filter(function(s) {
     var matchSearch = !searchQuery
       || s.name.toLowerCase().includes(searchQuery)
       || (s.description || '').toLowerCase().includes(searchQuery);
     var matchTags = filterTags.size === 0 || (s.tags || []).some(function(t) { return filterTags.has(t); });
     return matchSearch && matchTags;
   });
+
+  if (sortMode === 'newest') {
+    result.sort(function(a, b) { return new Date(b.date_added) - new Date(a.date_added); });
+  } else if (sortMode === 'oldest') {
+    result.sort(function(a, b) { return new Date(a.date_added) - new Date(b.date_added); });
+  } else if (sortMode === 'name') {
+    result.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  } else if (sortMode === 'nearest' && userLocation) {
+    result.sort(function(a, b) {
+      var da = haversineKm(userLocation.lat, userLocation.lng, a.lat, a.lng);
+      var db = haversineKm(userLocation.lat, userLocation.lng, b.lat, b.lng);
+      return da - db;
+    });
+  }
+
+  return result;
 }
 
 function renderSpotsList() {
   var list  = document.getElementById('spots-list');
   var empty = document.getElementById('empty-state');
   var fs    = filteredSpots();
+
+  var countEl = document.getElementById('spots-count');
+  if (countEl) {
+    var total = spots.length;
+    var shown = fs.length;
+    countEl.textContent = total === shown
+      ? total + ' spot' + (total !== 1 ? 's' : '')
+      : shown + ' of ' + total + ' spots';
+  }
 
   Array.from(list.children).forEach(function(c) { if (c !== empty) c.remove(); });
 
@@ -447,11 +491,21 @@ function renderSpotsList() {
 
     var nameEl = document.createElement('div');
     nameEl.className = 'card-name'; nameEl.textContent = spot.name;
+    card.appendChild(nameEl);
+
+    if (userLocation) {
+      var dist = haversineKm(userLocation.lat, userLocation.lng, spot.lat, spot.lng);
+      var distEl = document.createElement('div');
+      distEl.className = 'card-distance';
+      distEl.textContent = formatDistance(dist) + ' away';
+      card.appendChild(distEl);
+    }
 
     var dateEl = document.createElement('div');
     dateEl.className = 'card-date';
     dateEl.textContent = new Date(spot.date_added).toLocaleDateString('en-PH',
       { year: 'numeric', month: 'short', day: 'numeric' });
+    card.appendChild(dateEl);
 
     var tagsEl = document.createElement('div');
     tagsEl.className = 'card-tags';
@@ -460,8 +514,7 @@ function renderSpotsList() {
       chip.className = 'tag-chip tag-' + t; chip.textContent = t;
       tagsEl.appendChild(chip);
     });
-
-    card.appendChild(nameEl); card.appendChild(dateEl); card.appendChild(tagsEl);
+    card.appendChild(tagsEl);
     card.addEventListener('click', function() {
       map.flyTo([spot.lat, spot.lng], Math.max(map.getZoom(), 14));
       openDetailPanel(spot.id);
@@ -502,6 +555,11 @@ function openDetailPanel(id) {
   document.getElementById('detail-edit').style.display   = '';
   document.getElementById('detail-delete').style.display = '';
 
+  var directionsLink = document.getElementById('detail-directions');
+  directionsLink.href = 'https://www.google.com/maps/dir/?api=1&destination=' + spot.lat + ',' + spot.lng;
+
+  window.location.hash = 'spot=' + spot.id;
+
   renderDetailPhotos(spot.photos || []);
   detailPanel.classList.add('open');
   renderSpotsList();
@@ -510,6 +568,7 @@ function openDetailPanel(id) {
 function closeDetailPanel() {
   detailPanel.classList.remove('open');
   activeSpotId = null;
+  if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
   renderSpotsList();
 }
 
@@ -759,6 +818,90 @@ async function migrateLocalStorage() {
   toast('Migration complete! Your spots are now shared live.');
 }
 
+// ── Share spot ───────────────────────────────────────────────────────────────
+document.getElementById('detail-share').addEventListener('click', function() {
+  var url = window.location.origin + window.location.pathname + '#spot=' + activeSpotId;
+  if (navigator.share) {
+    var spot = spots.find(function(s) { return s.id === activeSpotId; });
+    navigator.share({ title: spot ? spot.name : 'FPV Spot', url: url }).catch(function() {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      toast('Link copied to clipboard!');
+    });
+  } else {
+    prompt('Copy this link:', url);
+  }
+});
+
+// ── Sort select ──────────────────────────────────────────────────────────────
+document.getElementById('sort-select').addEventListener('change', function(e) {
+  sortMode = e.target.value;
+  if (sortMode === 'nearest' && !userLocation) {
+    toast('Enable location first (tap the crosshairs button).', 'error');
+    e.target.value = 'newest';
+    sortMode = 'newest';
+    return;
+  }
+  renderSpotsList();
+});
+
+// ── Geolocation ──────────────────────────────────────────────────────────────
+var locateBtn = document.getElementById('btn-locate');
+locateBtn.addEventListener('click', function() {
+  if (!navigator.geolocation) {
+    toast('Geolocation not supported by your browser.', 'error');
+    return;
+  }
+  locateBtn.classList.add('loading');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      locateBtn.classList.remove('loading');
+      locateBtn.classList.add('active');
+      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+      if (userMarker) userMarker.remove();
+      userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+        radius: 8, fillColor: '#4299e1', fillOpacity: 0.9,
+        color: '#fff', weight: 2,
+      }).addTo(map).bindTooltip('You are here', { direction: 'top', offset: [0, -10] });
+
+      map.flyTo([userLocation.lat, userLocation.lng], Math.max(map.getZoom(), 12));
+      renderSpotsList();
+      toast('Location found!');
+    },
+    function(err) {
+      locateBtn.classList.remove('loading');
+      toast('Could not get location: ' + err.message, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
+// ── Deep linking ─────────────────────────────────────────────────────────────
+function openSpotFromHash() {
+  var hash = window.location.hash;
+  if (!hash || !hash.startsWith('#spot=')) return;
+  var spotId = hash.slice(6);
+  if (spotId && spots.find(function(s) { return s.id === spotId; })) {
+    var spot = spots.find(function(s) { return s.id === spotId; });
+    map.flyTo([spot.lat, spot.lng], Math.max(map.getZoom(), 14));
+    openDetailPanel(spotId);
+  }
+}
+window.addEventListener('hashchange', openSpotFromHash);
+
+// ── Global keyboard shortcuts ────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (lightboxOverlay.classList.contains('open')) return;
+    if (spotModal.classList.contains('open')) { closeModal(); return; }
+    if (detailPanel.classList.contains('open')) { closeDetailPanel(); return; }
+    if (document.getElementById('request-delete-overlay').classList.contains('open')) {
+      document.getElementById('request-delete-overlay').classList.remove('open'); return;
+    }
+  }
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   setStatus(false);
@@ -781,6 +924,7 @@ async function init() {
   spots.forEach(addMarkerForSpot);
   renderSpotsList();
   subscribeToSpots();
+  openSpotFromHash();
 }
 
 init();

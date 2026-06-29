@@ -26,6 +26,15 @@
       </div>
       <p>Community-driven. No account needed.</p>
     </div>
+    <div id="spots-count-bar">
+      <span id="spots-count">0 spots</span>
+      <select id="sort-select" aria-label="Sort spots">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="name">A → Z</option>
+        <option value="nearest">Nearest first</option>
+      </select>
+    </div>
     <div id="search-bar">
       <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
       <input type="text" id="search-input" placeholder="Search spots…" />
@@ -61,6 +70,11 @@
   </button>
   <div id="fab-tooltip">Click anywhere on the map to add a spot</div>
 
+  <!-- Geolocation button -->
+  <button id="btn-locate" title="Find my location" aria-label="Find my location">
+    <i class="fa-solid fa-location-crosshairs"></i>
+  </button>
+
   <!-- Detail Panel (inside #app for correct absolute positioning) -->
   <div id="detail-panel">
   <div class="detail-photos" id="detail-photos">
@@ -81,6 +95,10 @@
     <div class="detail-field">
       <label><i class="fa-solid fa-location-dot"></i> Coordinates</label>
       <p class="detail-coords" id="detail-coords">—</p>
+      <div class="detail-actions-row">
+        <a id="detail-directions" class="btn btn-sm btn-secondary" href="#" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Directions</a>
+        <button class="btn btn-sm btn-secondary" id="detail-share"><i class="fa-solid fa-share-nodes"></i> Share</button>
+      </div>
     </div>
     <div class="detail-field" id="detail-tags-row">
       <label><i class="fa-solid fa-tags"></i> Tags</label>
