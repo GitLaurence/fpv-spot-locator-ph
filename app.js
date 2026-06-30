@@ -20,6 +20,7 @@ let activeSpotId  = null;
 let photoIndex    = 0;
 let filterTags    = new Set();
 let searchQuery   = '';
+let sortOrder     = 'newest';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function uuid() {
@@ -83,6 +84,38 @@ legendControl.onAdd = function() {
   return div;
 };
 legendControl.addTo(map);
+
+// ── Geolocation control ──────────────────────────────────────────────────────
+var locateControl = L.control({ position: 'topleft' });
+locateControl.onAdd = function() {
+  var container = L.DomUtil.create('div', 'leaflet-bar leaflet-locate');
+  var btn = L.DomUtil.create('button', 'leaflet-locate-btn', container);
+  btn.title = 'Find my location';
+  btn.setAttribute('aria-label', 'Find my location');
+  btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+  btn.type = 'button';
+  L.DomEvent.disableClickPropagation(container);
+  L.DomEvent.on(btn, 'click', function() {
+    if (!navigator.geolocation) {
+      toast('Geolocation not supported by your browser.', 'error');
+      return;
+    }
+    btn.classList.add('locating');
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        btn.classList.remove('locating');
+        map.flyTo([pos.coords.latitude, pos.coords.longitude], 14);
+      },
+      function(err) {
+        btn.classList.remove('locating');
+        toast('Could not get your location: ' + err.message, 'error');
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  });
+  return container;
+};
+locateControl.addTo(map);
 
 const PIN_SVG_TEMPLATE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 50" width="36" height="46">' +
   '<path d="M20 2C12.268 2 6 8.268 6 16c0 10 14 32 14 32s14-22 14-32C34 8.268 27.732 2 20 2z" fill="{{COLOR}}" stroke="#fff" stroke-width="2"/>' +
@@ -410,19 +443,33 @@ async function saveSpot() {
 
 // ── Spot list ─────────────────────────────────────────────────────────────────
 function filteredSpots() {
-  return spots.filter(function(s) {
+  var fs = spots.filter(function(s) {
     var matchSearch = !searchQuery
       || s.name.toLowerCase().includes(searchQuery)
       || (s.description || '').toLowerCase().includes(searchQuery);
     var matchTags = filterTags.size === 0 || (s.tags || []).some(function(t) { return filterTags.has(t); });
     return matchSearch && matchTags;
   });
+  if (sortOrder === 'oldest') {
+    fs = fs.slice().sort(function(a, b) { return new Date(a.date_added) - new Date(b.date_added); });
+  } else if (sortOrder === 'name') {
+    fs = fs.slice().sort(function(a, b) { return a.name.localeCompare(b.name); });
+  }
+  return fs;
 }
 
 function renderSpotsList() {
   var list  = document.getElementById('spots-list');
   var empty = document.getElementById('empty-state');
   var fs    = filteredSpots();
+
+  var countEl = document.getElementById('spots-count');
+  if (countEl) {
+    var isFiltered = filterTags.size > 0 || searchQuery;
+    countEl.textContent = isFiltered
+      ? (fs.length + ' of ' + spots.length + ' spots')
+      : (spots.length + ' spot' + (spots.length !== 1 ? 's' : ''));
+  }
 
   Array.from(list.children).forEach(function(c) { if (c !== empty) c.remove(); });
 
@@ -478,8 +525,12 @@ function openDetailPanel(id) {
   activeSpotId = id;
   photoIndex   = 0;
 
+  history.replaceState(null, '', '#spot=' + id);
+
   document.getElementById('detail-name').textContent = spot.name;
   document.getElementById('detail-coords').textContent = spot.lat.toFixed(6) + ', ' + spot.lng.toFixed(6);
+  var mapsLink = document.getElementById('detail-gmaps-link');
+  if (mapsLink) mapsLink.href = 'https://www.google.com/maps?q=' + spot.lat.toFixed(6) + ',' + spot.lng.toFixed(6);
   var timeMap = { any: 'Any time', morning: 'Morning', afternoon: 'Afternoon', 'golden-hour': 'Golden Hour' };
   document.getElementById('detail-time').textContent = timeMap[spot.best_time] || spot.best_time;
   document.getElementById('detail-date').textContent =
@@ -510,6 +561,7 @@ function openDetailPanel(id) {
 function closeDetailPanel() {
   detailPanel.classList.remove('open');
   activeSpotId = null;
+  history.replaceState(null, '', location.pathname + location.search);
   renderSpotsList();
 }
 
@@ -600,10 +652,14 @@ lightboxOverlay.addEventListener('click', function(e) {
   if (e.target === lightboxOverlay) closeLightbox();
 });
 document.addEventListener('keydown', function(e) {
-  if (!lightboxOverlay.classList.contains('open')) return;
-  if (e.key === 'Escape') closeLightbox();
-  else if (e.key === 'ArrowLeft') lightboxStep(-1);
-  else if (e.key === 'ArrowRight') lightboxStep(1);
+  if (lightboxOverlay.classList.contains('open')) {
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') lightboxStep(-1);
+    else if (e.key === 'ArrowRight') lightboxStep(1);
+  } else if (e.key === 'Escape') {
+    if (spotModal.classList.contains('open')) closeModal();
+    else if (detailPanel.classList.contains('open')) closeDetailPanel();
+  }
 });
 
 document.getElementById('detail-edit').addEventListener('click', function() {
@@ -674,6 +730,23 @@ document.querySelectorAll('.filter-tag').forEach(function(btn) {
     else                     { filterTags.add(tag);    btn.classList.add('active'); }
     renderSpotsList();
   });
+});
+
+// ── Copy coordinates ──────────────────────────────────────────────────────────
+document.getElementById('detail-copy-coords').addEventListener('click', function() {
+  var coords = document.getElementById('detail-coords').textContent;
+  if (!coords || coords === '—') return;
+  navigator.clipboard.writeText(coords).then(function() {
+    toast('Coordinates copied!');
+  }).catch(function() {
+    toast('Could not copy to clipboard.', 'error');
+  });
+});
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+document.getElementById('sort-select').addEventListener('change', function(e) {
+  sortOrder = e.target.value;
+  renderSpotsList();
 });
 
 // ── Export ────────────────────────────────────────────────────────────────────
@@ -780,6 +853,17 @@ async function init() {
 
   spots.forEach(addMarkerForSpot);
   renderSpotsList();
+
+  // Open a specific spot if URL contains #spot=<id>
+  var hashMatch = location.hash.match(/^#spot=(.+)$/);
+  if (hashMatch) {
+    var linkedSpot = spots.find(function(s) { return s.id === hashMatch[1]; });
+    if (linkedSpot) {
+      map.setView([linkedSpot.lat, linkedSpot.lng], 14);
+      openDetailPanel(linkedSpot.id);
+    }
+  }
+
   subscribeToSpots();
 }
 

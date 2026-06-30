@@ -36,6 +36,14 @@
       <button class="filter-tag" data-tag="long-range">Long-range</button>
       <button class="filter-tag" data-tag="photography">Photography</button>
     </div>
+    <div id="sort-bar">
+      <span id="spots-count"></span>
+      <select id="sort-select" aria-label="Sort spots">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="name">Name A–Z</option>
+      </select>
+    </div>
     <div id="spots-list">
       <div class="empty-state" id="empty-state">
         <i class="fa-solid fa-map-pin"></i>
@@ -80,7 +88,11 @@
   <div class="detail-body">
     <div class="detail-field">
       <label><i class="fa-solid fa-location-dot"></i> Coordinates</label>
-      <p class="detail-coords" id="detail-coords">—</p>
+      <div class="detail-coords-row">
+        <p class="detail-coords" id="detail-coords">—</p>
+        <button class="btn-icon btn-icon-sm" id="detail-copy-coords" title="Copy coordinates" aria-label="Copy coordinates"><i class="fa-regular fa-copy"></i></button>
+        <a class="btn-icon btn-icon-sm" id="detail-gmaps-link" href="#" target="_blank" rel="noopener noreferrer" title="Open in Google Maps" aria-label="Open in Google Maps"><i class="fa-solid fa-map-location-dot"></i></a>
+      </div>
     </div>
     <div class="detail-field" id="detail-tags-row">
       <label><i class="fa-solid fa-tags"></i> Tags</label>
