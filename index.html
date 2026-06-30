@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Community-driven FPV drone spot map for the Philippines. Discover, share, and explore flying spots."/>
+  <meta name="theme-color" content="#e53e3e"/>
+  <meta property="og:title" content="FPV Spot Locator PH"/>
+  <meta property="og:description" content="Community-driven FPV drone spot map for the Philippines."/>
+  <meta property="og:type" content="website"/>
   <title>FPV Spot Locator PH</title>
+  <link rel="manifest" href="manifest.json"/>
   <link rel="stylesheet" href="vendor/leaflet.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -24,19 +30,29 @@
           <span id="status-text">Connecting…</span>
         </span>
       </div>
-      <p>Community-driven. No account needed.</p>
+      <div class="sidebar-subheader">
+        <p>Community-driven. No account needed.</p>
+        <span id="spots-count" class="spots-count"></span>
+      </div>
     </div>
     <div id="search-bar">
       <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
-      <input type="text" id="search-input" placeholder="Search spots…" />
+      <input type="text" id="search-input" placeholder="Search spots…" aria-label="Search spots"/>
     </div>
     <div id="filter-tags">
       <button class="filter-tag" data-tag="freestyle">Freestyle</button>
       <button class="filter-tag" data-tag="racing">Racing</button>
       <button class="filter-tag" data-tag="long-range">Long-range</button>
       <button class="filter-tag" data-tag="photography">Photography</button>
+      <button id="clear-filters-btn" class="filter-clear-btn" style="display:none" aria-label="Clear all filters">
+        <i class="fa-solid fa-xmark"></i> Clear
+      </button>
     </div>
     <div id="spots-list">
+      <div id="spots-loading" class="spots-loading" style="display:none">
+        <span class="spinner"></span>
+        <span>Loading spots…</span>
+      </div>
       <div class="empty-state" id="empty-state">
         <i class="fa-solid fa-map-pin"></i>
         <span>No spots yet.<br>Click the map to add one!</span>
@@ -62,7 +78,7 @@
   <div id="fab-tooltip">Click anywhere on the map to add a spot</div>
 
   <!-- Detail Panel (inside #app for correct absolute positioning) -->
-  <div id="detail-panel">
+  <div id="detail-panel" role="complementary" aria-label="Spot details">
   <div class="detail-photos" id="detail-photos">
     <div class="no-photo-placeholder"><i class="fa-solid fa-image"></i></div>
     <button class="photo-nav-btn prev" id="photo-prev" aria-label="Previous photo"><i class="fa-solid fa-chevron-left"></i></button>
@@ -72,6 +88,7 @@
   <div class="detail-header">
     <h2 id="detail-name">Spot Name</h2>
     <div class="detail-header-actions">
+      <button class="btn-icon" id="detail-share" aria-label="Copy spot link" title="Copy link"><i class="fa-solid fa-share-nodes"></i></button>
       <button class="btn-icon" id="detail-edit" aria-label="Edit spot" title="Edit"><i class="fa-solid fa-pen"></i></button>
       <button class="btn-icon btn-icon-warn" id="detail-delete" aria-label="Request deletion" title="Request deletion"><i class="fa-solid fa-flag"></i></button>
       <button class="btn-close" id="detail-close" aria-label="Close spot details"><i class="fa-solid fa-xmark"></i></button>
@@ -80,7 +97,10 @@
   <div class="detail-body">
     <div class="detail-field">
       <label><i class="fa-solid fa-location-dot"></i> Coordinates</label>
-      <p class="detail-coords" id="detail-coords">—</p>
+      <div class="coords-row">
+        <p class="detail-coords" id="detail-coords">—</p>
+        <button id="copy-coords-btn" class="btn-icon btn-icon-sm" aria-label="Copy coordinates" title="Copy coordinates"><i class="fa-regular fa-copy"></i></button>
+      </div>
     </div>
     <div class="detail-field" id="detail-tags-row">
       <label><i class="fa-solid fa-tags"></i> Tags</label>
@@ -107,7 +127,7 @@
 </div><!-- /#app -->
 
 <!-- Add/Edit Spot Modal -->
-<div class="modal-overlay" id="spot-modal">
+<div class="modal-overlay" id="spot-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <div class="modal-header">
       <h2 id="modal-title">Add New Spot</h2>
@@ -173,7 +193,7 @@
 </div>
 
 <!-- Confirm Dialog -->
-<div id="confirm-overlay">
+<div id="confirm-overlay" role="dialog" aria-modal="true">
   <div id="confirm-box">
     <p id="confirm-msg">Are you sure?</p>
     <div class="btn-row">
@@ -184,11 +204,11 @@
 </div>
 
 <!-- Request Deletion Dialog -->
-<div id="request-delete-overlay">
+<div id="request-delete-overlay" role="dialog" aria-modal="true" aria-labelledby="request-delete-heading">
   <div id="request-delete-box">
-    <h3>Request Deletion</h3>
+    <h3 id="request-delete-heading">Request Deletion</h3>
     <p>Tell the admins why "<span id="request-delete-spot-name"></span>" should be removed.</p>
-    <textarea id="request-delete-reason" rows="3" maxlength="500" placeholder="Reason (optional)"></textarea>
+    <textarea id="request-delete-reason" rows="3" maxlength="500" placeholder="Reason (optional)" aria-label="Reason for deletion"></textarea>
     <div class="btn-row">
       <button class="btn btn-ghost btn-sm" id="request-delete-cancel">Cancel</button>
       <button class="btn btn-danger btn-sm" id="request-delete-submit">Submit Request</button>
@@ -197,7 +217,7 @@
 </div>
 
 <!-- Toast Container -->
-<div id="toast-container"></div>
+<div id="toast-container" role="status" aria-live="polite"></div>
 
 <!-- Status Toast Container (top-right) -->
 <div id="status-toast-container"></div>
@@ -211,7 +231,7 @@
 </div>
 
 <!-- Photo Lightbox -->
-<div id="lightbox-overlay">
+<div id="lightbox-overlay" role="dialog" aria-modal="true" aria-label="Photo viewer">
   <button class="lightbox-close" id="lightbox-close" aria-label="Close image viewer"><i class="fa-solid fa-xmark"></i></button>
   <button class="lightbox-nav prev" id="lightbox-prev" aria-label="Previous image"><i class="fa-solid fa-chevron-left"></i></button>
   <img id="lightbox-img" src="" alt="Spot photo full view"/>
