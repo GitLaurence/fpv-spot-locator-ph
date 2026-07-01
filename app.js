@@ -255,8 +255,10 @@ document.getElementById('gmaps-apply-btn').addEventListener('click', function() 
   var coords = parseGoogleMapsCoords(input);
   if (!coords || isNaN(coords.lat) || isNaN(coords.lng) ||
       coords.lat < -90 || coords.lat > 90 || coords.lng < -180 || coords.lng > 180) {
-    if (/goo\.gl|maps\.app/.test(input)) {
-      toast('Shortened links aren\'t supported — open the link, then copy the full URL or coordinates from the address bar.', 'error');
+    var shortLink = input.match(/https?:\/\/(?:[\w-]+\.)?(?:goo\.gl|maps\.app\.goo\.gl)\/\S+/);
+    if (shortLink) {
+      window.open(shortLink[0], '_blank', 'noopener,noreferrer');
+      toast('Opened the link in a new tab — copy the full URL from its address bar and paste it back here.', 'error');
     } else {
       toast('Could not read coordinates from that text.', 'error');
     }
@@ -442,6 +444,7 @@ function renderSpotsList() {
     if (spot.photos && spot.photos.length > 0) {
       var img = document.createElement('img');
       img.className = 'card-thumb'; img.src = spot.photos[0]; img.alt = spot.name;
+      img.loading = 'lazy';
       card.appendChild(img);
     }
 
@@ -462,10 +465,17 @@ function renderSpotsList() {
     });
 
     card.appendChild(nameEl); card.appendChild(dateEl); card.appendChild(tagsEl);
-    card.addEventListener('click', function() {
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'View spot: ' + spot.name);
+    var activateCard = function() {
       map.flyTo([spot.lat, spot.lng], Math.max(map.getZoom(), 14));
       openDetailPanel(spot.id);
       if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+    };
+    card.addEventListener('click', activateCard);
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateCard(); }
     });
     list.appendChild(card);
   });
@@ -535,6 +545,7 @@ function renderDetailPhotos(photos) {
   photos.forEach(function(url, i) {
     var img = document.createElement('img');
     img.src = url; img.alt = 'Photo ' + (i + 1);
+    img.loading = 'lazy';
     img.style.cursor = 'zoom-in';
     if (i === photoIndex) img.classList.add('active');
     img.addEventListener('click', function() { openLightbox(photos, i); });

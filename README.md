@@ -1,12 +1,14 @@
 # FPV Spot Locator PH
 
-A community-driven web app for FPV drone pilots in the Philippines to discover and share flying spots — no backend or account required.
+A community-driven web app for FPV drone pilots in the Philippines to discover and share flying spots — no signup required.
 
 ---
 
 ## Overview
 
-FPV Spot Locator PH is a static, client-side web application built with vanilla HTML, CSS, and JavaScript. Pilots can drop pins on an interactive map of the Philippines, attach photos and details to each spot, and browse spots shared by others. All data is stored locally in the browser (via `localStorage`) and optionally exported/imported as JSON files for sharing.
+FPV Spot Locator PH is a static, client-side web application built with vanilla HTML, CSS, and JavaScript. Pilots can drop pins on an interactive map of the Philippines, attach photos and details to each spot, and browse spots shared live by the whole community. Spots are stored in a shared [Supabase](https://supabase.com) backend (Postgres + Storage) and sync across everyone's browser in real time via anonymous auth — there's nothing to sign up for, but every visitor sees the same live map. Spots can also be exported/imported as JSON files for offline backups.
+
+Anyone can add, edit, or request deletion of a spot (community-maintained map). Deletion requests go through a moderation queue reviewed from a separate admin dashboard (`admin.html`), which requires an admin login.
 
 ---
 
@@ -16,8 +18,10 @@ FPV Spot Locator PH is a static, client-side web application built with vanilla 
 - **Interactive map** centered on the Philippines using [Leaflet.js](https://leafletjs.com/) with OpenStreetMap tiles (free, no API key needed)
 - **Add a spot** by clicking anywhere on the map — opens a form to fill in details
 - **Spot details panel** showing name, description, safety notes, and photos when a marker is clicked
-- **Photo upload** — attach up to 5 images per spot (stored as Base64 in `localStorage`)
+- **Photo upload** — attach up to 5 images per spot, uploaded to Supabase Storage
 - **Spot cards list** — sidebar or bottom drawer listing all spots with quick-jump to map location
+- **Live sync** — spots added/edited/deleted by anyone appear for all other visitors in real time (Supabase Realtime)
+- **Community moderation** — anyone can request a spot be deleted (with an optional reason); admins review requests from the admin dashboard
 
 ### Spot Fields
 | Field | Type | Notes |
@@ -27,14 +31,15 @@ FPV Spot Locator PH is a static, client-side web application built with vanilla 
 | Safety / Legality | Textarea | CAAP rules, no-fly zone warnings, etc. |
 | Best time to fly | Select | Morning / Afternoon / Golden hour / Any |
 | Tags | Multi-select | Freestyle / Racing / Long-range / Photography |
-| Photos | File input | JPEG/PNG, max 5 files, stored as Base64 |
+| Photos | File input | JPEG/PNG/WebP, max 5 files, uploaded to Supabase Storage |
 | Coordinates | Auto-filled | Lat/Lng from map click |
 | Date added | Auto-filled | ISO date string |
 
 ### Data Persistence
-- Spots are saved to `localStorage` — they persist across page refreshes in the same browser
-- **Export spots** — download all spots as a `.json` file
-- **Import spots** — load a `.json` file to merge or replace spots (useful for sharing with the community)
+- Spots live in a shared Supabase Postgres table and sync to every visitor in real time (Supabase Realtime), so refreshing the page — or opening it on another device — shows the same live data
+- Every visitor is signed in anonymously (Supabase Auth) on first load, purely to satisfy row-level-security checks — no email, password, or profile is ever created
+- **Export spots** — download all spots as a `.json` file (local backup)
+- **Import spots** — the original localStorage → Supabase migration path (`migrateLocalStorage()` in `app.js`) automatically moves any spots saved by earlier (pre-Supabase) versions of the app into the shared database on next load
 
 ---
 
@@ -42,14 +47,14 @@ FPV Spot Locator PH is a static, client-side web application built with vanilla 
 
 | Concern | Choice | Reason |
 |---|---|---|
-| Map | Leaflet.js (CDN) | Lightweight, free, no API key |
-| Tiles | OpenStreetMap | Free, no key, good PH coverage |
+| Map | Leaflet.js (vendored) | Lightweight, free, no API key |
+| Tiles | OpenStreetMap / Esri satellite | Free, no key, good PH coverage |
 | UI | Vanilla HTML + CSS | Zero build step, fast |
 | Icons | Font Awesome (CDN) | Pin, camera, tag icons |
-| Storage | `localStorage` | No server needed |
+| Backend | Supabase (Postgres + Storage + Realtime + Auth) | Shared live data, no custom server to run |
 | Fonts | Google Fonts — Inter | Clean, readable |
 
-No build tools, bundlers, or frameworks are required. The entire app is a single `index.html` plus a `style.css` and `app.js`.
+No build tools, bundlers, or frameworks are required. `vendor/` contains the pinned Leaflet and Supabase JS client so the app works without any CDN for those two libraries.
 
 ---
 
@@ -57,9 +62,14 @@ No build tools, bundlers, or frameworks are required. The entire app is a single
 
 ```
 fpv-spot-locator-ph/
-├── index.html          # App shell, map container, modals
-├── style.css           # Layout, map styles, modal, cards, responsive
-├── app.js              # Leaflet init, spot CRUD, localStorage, import/export
+├── index.html          # Main app shell, map container, modals
+├── app.js              # Leaflet init, spot CRUD, Supabase sync, import/export
+├── admin.html           # Admin dashboard shell (login + moderation UI)
+├── admin.js             # Admin auth, deletion-request queue, spot management
+├── admin.css             # Admin dashboard styles
+├── style.css            # Layout, map styles, modal, cards, responsive
+├── supabase-setup.sql   # One-time SQL to provision tables, RLS policies, storage bucket
+├── vendor/               # Pinned Leaflet + Supabase JS client
 ├── assets/
 │   └── marker-fpv.svg  # Custom FPV drone map marker icon
 └── README.md
@@ -68,6 +78,8 @@ fpv-spot-locator-ph/
 ---
 
 ## Implementation Plan
+
+_The phases below describe the original MVP build-out. The app has since moved from `localStorage`-only storage to a shared Supabase backend (see "Tech Stack" and "Data Persistence" above); the phases are kept here as a historical record of the initial approach._
 
 ### Phase 1 — Map & Markers
 1. Set up `index.html` with Leaflet CDN and a full-screen map div
@@ -119,20 +131,23 @@ fpv-spot-locator-ph/
   "name": "Bataan Nuclear Power Plant Field",
   "description": "Wide open field, minimal obstacles, great for freestyle.",
   "safety": "Check CAAP NOTAM before flying. Stay below 400ft AGL.",
-  "bestTime": "morning",
+  "best_time": "morning",
   "tags": ["freestyle", "photography"],
-  "photos": ["data:image/jpeg;base64,..."],
+  "photos": ["https://<project>.supabase.co/storage/v1/object/public/spot-photos/..."],
   "lat": 14.6507,
   "lng": 120.5400,
-  "dateAdded": "2026-06-09T00:00:00.000Z"
+  "date_added": "2026-06-09T00:00:00.000Z",
+  "user_id": "uuid-v4"
 }
 ```
+
+This mirrors the `public.spots` table defined in `supabase-setup.sql` (see that file for the full schema, constraints, and RLS policies).
 
 ---
 
 ## Local Development
 
-No build step needed. Just open `index.html` in a browser:
+No build step needed. Just open `index.html` in a browser (an internet connection is required — spot data loads live from Supabase):
 
 ```bash
 # Option A — plain file open
@@ -144,13 +159,15 @@ npx serve .
 python3 -m http.server 8080
 ```
 
+To set up your own Supabase project instead of using the shared one, run `supabase-setup.sql` once in the Supabase SQL editor, then swap `SUPABASE_URL`/`SUPABASE_KEY` at the top of `app.js` and `admin.js`. To create an admin account for `admin.html`, add a user via the Supabase dashboard and insert their UUID into the `public.admins` table (see the comment above that table in `supabase-setup.sql`).
+
 ---
 
 ## Future Ideas (Post-MVP)
 
-- Supabase or Firebase backend to share spots across users in real time
 - User profiles and spot ratings/reviews
 - CAAP no-fly zone overlay (GeoJSON)
 - Offline PWA support with Service Worker caching
 - Heatmap layer showing spot density across regions
 - Link sharing — encode spot ID in URL hash for direct linking
+- Resolve shortened Google Maps links (`maps.app.goo.gl`) without a manual copy/paste round-trip — currently blocked by CORS on client-side redirect following

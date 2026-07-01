@@ -129,6 +129,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 }
 .spot-card:hover { border-color: var(--red); background: rgba(229,62,62,0.05); }
 .spot-card.active { border-color: var(--red); background: rgba(229,62,62,0.08); }
+.spot-card:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 
 .card-thumb {
   width: 100%;
