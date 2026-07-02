@@ -132,6 +132,16 @@ function removeMarker(id) {
   if (markerMap[id]) { markerMap[id].remove(); delete markerMap[id]; }
 }
 
+// Repositions/re-styles an existing marker in place instead of tearing it down
+// and rebuilding it, so edits and realtime updates don't cause marker flicker.
+function updateMarkerForSpot(spot) {
+  var marker = markerMap[spot.id];
+  if (!marker) { addMarkerForSpot(spot); return; }
+  marker.setLatLng([spot.lat, spot.lng]);
+  marker.setIcon(getIconForSpot(spot));
+  marker.setTooltipContent(spot.name);
+}
+
 map.on('click', e => {
   pendingLatLng = e.latlng;
   editingId = null;
@@ -385,8 +395,7 @@ async function saveSpot() {
       await deletePhotosFromStorage(removedPhotos);
       var idx = spots.findIndex(function(s) { return s.id === editingId; });
       if (idx !== -1) spots[idx] = payload;
-      removeMarker(editingId);
-      addMarkerForSpot(payload);
+      updateMarkerForSpot(payload);
       if (activeSpotId === editingId) openDetailPanel(editingId);
     } else {
       var ins = await db.from('spots').insert(payload);
@@ -713,8 +722,7 @@ function subscribeToSpots() {
       var spot = payload.new;
       var idx = spots.findIndex(function(s) { return s.id === spot.id; });
       if (idx !== -1) spots[idx] = spot; else spots.push(spot);
-      removeMarker(spot.id);
-      addMarkerForSpot(spot);
+      updateMarkerForSpot(spot);
       if (activeSpotId === spot.id) openDetailPanel(spot.id);
       renderSpotsList();
     })
@@ -768,6 +776,21 @@ async function migrateLocalStorage() {
   }
   localStorage.removeItem('fpv_spots_ph');
   toast('Migration complete! Your spots are now shared live.');
+}
+
+// ── Offline/online network status ─────────────────────────────────────────────
+window.addEventListener('offline', function() {
+  statusToast('You are offline. Changes will not sync until you reconnect.', 'error');
+});
+window.addEventListener('online', function() {
+  statusToast('Back online.', 'success');
+});
+
+// ── Service worker (offline app-shell caching) ────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function() { /* offline support unavailable, app still works online */ });
+  });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

@@ -1,0 +1,18 @@
+{
+  "name": "FPV Spot Locator PH",
+  "short_name": "FPV Spots PH",
+  "description": "Discover and share FPV drone flying spots across the Philippines.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#e53e3e",
+  "icons": [
+    {
+      "src": "assets/marker-fpv.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

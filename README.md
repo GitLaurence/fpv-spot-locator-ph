@@ -22,6 +22,7 @@ Anyone can add, edit, or request deletion of a spot (community-maintained map). 
 - **Spot cards list** — sidebar or bottom drawer listing all spots with quick-jump to map location
 - **Live sync** — spots added/edited/deleted by anyone appear for all other visitors in real time (Supabase Realtime)
 - **Community moderation** — anyone can request a spot be deleted (with an optional reason); admins review requests from the admin dashboard
+- **Offline-capable app shell** — a service worker (`sw.js`) caches the map UI, styles, and vendored libraries so the app still loads (with previously-seen spots) when connectivity drops mid-flight; a web app manifest (`manifest.json`) makes it installable to a home screen
 
 ### Spot Fields
 | Field | Type | Notes |
@@ -64,6 +65,8 @@ No build tools, bundlers, or frameworks are required. `vendor/` contains the pin
 fpv-spot-locator-ph/
 ├── index.html          # Main app shell, map container, modals
 ├── app.js              # Leaflet init, spot CRUD, Supabase sync, import/export
+├── manifest.json       # Web app manifest (installable, theme color, icon)
+├── sw.js               # Service worker — caches app shell for offline use
 ├── admin.html           # Admin dashboard shell (login + moderation UI)
 ├── admin.js             # Admin auth, deletion-request queue, spot management
 ├── admin.css             # Admin dashboard styles
@@ -167,7 +170,7 @@ To set up your own Supabase project instead of using the shared one, run `supaba
 
 - User profiles and spot ratings/reviews
 - CAAP no-fly zone overlay (GeoJSON)
-- Offline PWA support with Service Worker caching
+- Cache the spots list itself (not just the app shell) for a fully offline browsing experience, and generate proper PNG/maskable app icons for `manifest.json`
 - Heatmap layer showing spot density across regions
 - Link sharing — encode spot ID in URL hash for direct linking
 - Resolve shortened Google Maps links (`maps.app.goo.gl`) without a manual copy/paste round-trip — currently blocked by CORS on client-side redirect following
