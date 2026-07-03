@@ -409,6 +409,7 @@ async function saveSpot() {
     }
 
     renderSpotsList();
+    cacheSpots(spots);
     closeModal();
     toast(editingId ? 'Spot updated!' : 'Spot added!');
   } catch (err) {
@@ -496,6 +497,7 @@ function openDetailPanel(id) {
   if (!spot) return;
   activeSpotId = id;
   photoIndex   = 0;
+  if (location.hash !== '#spot=' + id) history.replaceState(null, '', '#spot=' + id);
 
   document.getElementById('detail-name').textContent = spot.name;
   document.getElementById('detail-coords').textContent = spot.lat.toFixed(6) + ', ' + spot.lng.toFixed(6);
@@ -529,6 +531,7 @@ function openDetailPanel(id) {
 function closeDetailPanel() {
   detailPanel.classList.remove('open');
   activeSpotId = null;
+  if (location.hash.indexOf('#spot=') === 0) history.replaceState(null, '', location.pathname + location.search);
   renderSpotsList();
 }
 
@@ -626,6 +629,18 @@ document.addEventListener('keydown', function(e) {
   else if (e.key === 'ArrowRight') lightboxStep(1);
 });
 
+document.getElementById('detail-share').addEventListener('click', async function() {
+  var spot = spots.find(function(s) { return s.id === activeSpotId; });
+  if (!spot) return;
+  var url = location.origin + location.pathname + '#spot=' + spot.id;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Link copied to clipboard!');
+  } catch (err) {
+    toast(url, 'success');
+  }
+});
+
 document.getElementById('detail-edit').addEventListener('click', function() {
   var spot = spots.find(function(s) { return s.id === activeSpotId; });
   if (!spot) return;
@@ -707,6 +722,18 @@ document.getElementById('btn-export').addEventListener('click', function() {
   toast('Spots exported!');
 });
 
+// ── Offline spot cache (last-known spot list, for browsing with no connection) ─
+var SPOTS_CACHE_KEY = 'fpv_spots_cache_ph';
+function cacheSpots(list) {
+  try { localStorage.setItem(SPOTS_CACHE_KEY, JSON.stringify(list)); } catch (err) { /* storage full/unavailable, skip */ }
+}
+function loadCachedSpots() {
+  try {
+    var raw = localStorage.getItem(SPOTS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) { return null; }
+}
+
 // ── Realtime subscription ─────────────────────────────────────────────────────
 function subscribeToSpots() {
   db.channel('spots-live')
@@ -716,6 +743,7 @@ function subscribeToSpots() {
       spots.push(spot);
       addMarkerForSpot(spot);
       renderSpotsList();
+      cacheSpots(spots);
       toast('New spot: ' + spot.name);
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'spots' }, function(payload) {
@@ -725,6 +753,7 @@ function subscribeToSpots() {
       updateMarkerForSpot(spot);
       if (activeSpotId === spot.id) openDetailPanel(spot.id);
       renderSpotsList();
+      cacheSpots(spots);
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'spots' }, function(payload) {
       var id = payload.old.id;
@@ -732,6 +761,7 @@ function subscribeToSpots() {
       removeMarker(id);
       if (activeSpotId === id) closeDetailPanel();
       renderSpotsList();
+      cacheSpots(spots);
     })
     .subscribe(function(status) { setStatus(status === 'SUBSCRIBED'); });
 }
@@ -778,6 +808,17 @@ async function migrateLocalStorage() {
   toast('Migration complete! Your spots are now shared live.');
 }
 
+// ── Shared spot links (#spot=<id>) ────────────────────────────────────────────
+function openSpotFromHash() {
+  var match = location.hash.match(/^#spot=([0-9a-f-]+)$/i);
+  if (!match) return;
+  var spot = spots.find(function(s) { return s.id === match[1]; });
+  if (!spot) { toast('That shared spot could not be found.', 'error'); return; }
+  map.flyTo([spot.lat, spot.lng], Math.max(map.getZoom(), 14));
+  openDetailPanel(spot.id);
+}
+window.addEventListener('hashchange', openSpotFromHash);
+
 // ── Offline/online network status ─────────────────────────────────────────────
 window.addEventListener('offline', function() {
   statusToast('You are offline. Changes will not sync until you reconnect.', 'error');
@@ -809,11 +850,23 @@ async function init() {
   await migrateLocalStorage();
 
   var fetchRes = await db.from('spots').select('*').order('date_added', { ascending: false });
-  if (fetchRes.error) { toast('Failed to load spots: ' + fetchRes.error.message, 'error'); return; }
-  spots = fetchRes.data || [];
+  if (fetchRes.error) {
+    var cached = loadCachedSpots();
+    if (cached) {
+      spots = cached;
+      toast('Offline — showing spots from your last visit.', 'error');
+    } else {
+      toast('Failed to load spots: ' + fetchRes.error.message, 'error');
+      return;
+    }
+  } else {
+    spots = fetchRes.data || [];
+    cacheSpots(spots);
+  }
 
   spots.forEach(addMarkerForSpot);
   renderSpotsList();
+  openSpotFromHash();
   subscribeToSpots();
 }
 

@@ -22,7 +22,9 @@ Anyone can add, edit, or request deletion of a spot (community-maintained map). 
 - **Spot cards list** — sidebar or bottom drawer listing all spots with quick-jump to map location
 - **Live sync** — spots added/edited/deleted by anyone appear for all other visitors in real time (Supabase Realtime)
 - **Community moderation** — anyone can request a spot be deleted (with an optional reason); admins review requests from the admin dashboard
-- **Offline-capable app shell** — a service worker (`sw.js`) caches the map UI, styles, and vendored libraries so the app still loads (with previously-seen spots) when connectivity drops mid-flight; a web app manifest (`manifest.json`) makes it installable to a home screen
+- **Offline-capable app shell** — a service worker (`sw.js`) caches the map UI, styles, and vendored libraries so the app still loads when connectivity drops mid-flight; a web app manifest (`manifest.json`) makes it installable to a home screen
+- **Offline spot browsing** — the last-fetched spot list is cached to `localStorage`, so if the initial load happens with no connection, the map still shows every spot from your last visit (read-only until you're back online)
+- **Shareable spot links** — the share icon in a spot's detail panel copies a direct link (`#spot=<id>`) that opens straight to that spot on the map
 
 ### Spot Fields
 | Field | Type | Notes |
@@ -170,7 +172,6 @@ To set up your own Supabase project instead of using the shared one, run `supaba
 
 - User profiles and spot ratings/reviews
 - CAAP no-fly zone overlay (GeoJSON)
-- Cache the spots list itself (not just the app shell) for a fully offline browsing experience, and generate proper PNG/maskable app icons for `manifest.json`
+- Generate proper PNG/maskable app icons for `manifest.json`
 - Heatmap layer showing spot density across regions
-- Link sharing — encode spot ID in URL hash for direct linking
 - Resolve shortened Google Maps links (`maps.app.goo.gl`) without a manual copy/paste round-trip — currently blocked by CORS on client-side redirect following
