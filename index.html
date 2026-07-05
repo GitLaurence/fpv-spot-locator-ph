@@ -132,6 +132,10 @@
         <label for="spot-name">Spot Name <span style="color:var(--red)">*</span></label>
         <input type="text" id="spot-name" placeholder="e.g. Bataan Nuclear Power Plant Field" maxlength="80"/>
       </div>
+      <div class="visually-hidden" aria-hidden="true">
+        <label for="spot-website">Leave this field blank</label>
+        <input type="text" id="spot-website" tabindex="-1" autocomplete="off"/>
+      </div>
       <div class="form-group">
         <label for="spot-desc">Description</label>
         <textarea id="spot-desc" rows="3" placeholder="Terrain, obstacles, open space…"></textarea>

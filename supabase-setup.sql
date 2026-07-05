@@ -43,6 +43,31 @@ create policy "admin_delete"   on public.spots for delete using (
 -- 3. Enable Realtime
 alter publication supabase_realtime add table public.spots;
 
+-- Spam protection: cap how many spots a single user can create per hour.
+-- Runs only on insert, so editing existing spots is never throttled.
+create or replace function public.enforce_spot_insert_rate_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (
+    select count(*) from public.spots
+    where user_id = new.user_id
+      and date_added > now() - interval '1 hour'
+  ) >= 20 then
+    raise exception 'Rate limit exceeded: max 20 spots per hour per user.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists spots_rate_limit on public.spots;
+create trigger spots_rate_limit
+  before insert on public.spots
+  for each row execute function public.enforce_spot_insert_rate_limit();
+
 -- 4. Storage bucket (run if you prefer SQL over the dashboard)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
   values ('spot-photos', 'spot-photos', true, 20971520, array['image/jpeg','image/png','image/webp'])
@@ -53,11 +78,13 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 create policy "photos_public_read" on storage.objects
   for select using (bucket_id = 'spot-photos');
 
--- Any authenticated (incl. anonymous) user can upload photos
-create policy "photos_any_upload" on storage.objects
+-- Any authenticated (incl. anonymous) user can upload photos, but only into
+-- their own "<user_id>/…" folder (the app always uploads to this path).
+create policy "photos_own_upload" on storage.objects
   for insert with check (
     bucket_id = 'spot-photos'
     and auth.uid() is not null
+    and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 -- Photo deletion: admins (for spot deletion cleanup) or any user (for

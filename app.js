@@ -212,6 +212,7 @@ function openModal(spot) {
   document.getElementById('modal-coords').textContent =
     latlng ? (latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6)) : 'Click a location on the map first';
   document.getElementById('gmaps-coords').value = '';
+  document.getElementById('spot-website').value = '';
   document.getElementById('spot-name').value   = spot ? spot.name : '';
   document.getElementById('spot-desc').value   = spot ? (spot.description || '') : '';
   document.getElementById('spot-safety').value = spot ? (spot.safety || '') : '';
@@ -362,6 +363,12 @@ async function uploadPendingPhotos() {
 
 // ── Save spot ─────────────────────────────────────────────────────────────────
 async function saveSpot() {
+  if (document.getElementById('spot-website').value.trim()) {
+    // Honeypot field tripped — pretend success without touching the DB.
+    closeModal();
+    return;
+  }
+
   var name = document.getElementById('spot-name').value.trim();
   if (!name) { toast('Spot name is required.', 'error'); return; }
 
