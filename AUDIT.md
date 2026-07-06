@@ -1,6 +1,6 @@
 # FPV Spot Locator PH — Build Audit
 
-_Date: 2026-06-10 (statuses last updated 2026-07-05)_
+_Date: 2026-06-10 (statuses last updated 2026-07-06)_
 _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `assets/`_
 
 ---
@@ -46,7 +46,7 @@ _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `a
 | 14 | ✅ Fixed | **Icon-only buttons lack `aria-label`** | `index.html` | Close buttons, FAB, photo nav, and lightbox controls now carry `aria-label` in addition to `title`. |
 | 15 | 🟡 Partial | **No keyboard navigation for the map/spot list** | App-wide | Spot list cards now handle `keydown` (Enter/Space) for keyboard activation. Map markers themselves are still mouse/touch-only — Leaflet doesn't expose keyboard focus on markers out of the box. |
 | 16 | ⬜ Open | **No "drag to reposition" when editing a spot** | Add/Edit modal | Now that #1 is fixed, pasting new coordinates during edit works, but there's still no drag-the-pin interaction — paste-coordinates is the only fix-my-location path. |
-| 17 | ⬜ Open | **No loading/empty states for slow connections** | `app.js` `init()` | If `db.from('spots').select()` is slow, the UI still shows the empty state with no spinner, which could read as "no spots" rather than "loading". |
+| 17 | ✅ Fixed | **No loading/empty states for slow connections** | `app.js` `init()` | Sidebar now shows a spinner ("Loading spots…") while the initial fetch is in flight, so a slow `db.from('spots').select()` no longer reads as "no spots" — the empty state only appears once loading has actually finished. |
 | 18 | ✅ Fixed | **No offline support / PWA manifest** | `sw.js`, `manifest.json`, `app.js` | Service worker caches the app shell, `manifest.json` makes the app installable, and the last-fetched spot list is cached to `localStorage` for offline browsing. |
 
 ---

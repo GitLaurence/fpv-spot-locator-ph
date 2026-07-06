@@ -439,11 +439,12 @@ function filteredSpots() {
 }
 
 function renderSpotsList() {
-  var list  = document.getElementById('spots-list');
-  var empty = document.getElementById('empty-state');
-  var fs    = filteredSpots();
+  var list    = document.getElementById('spots-list');
+  var empty   = document.getElementById('empty-state');
+  var loading = document.getElementById('loading-state');
+  var fs      = filteredSpots();
 
-  Array.from(list.children).forEach(function(c) { if (c !== empty) c.remove(); });
+  Array.from(list.children).forEach(function(c) { if (c !== empty && c !== loading) c.remove(); });
 
   if (fs.length === 0) {
     empty.style.display = 'flex';
@@ -671,6 +672,9 @@ document.getElementById('request-delete-cancel').addEventListener('click', funct
 document.getElementById('request-delete-submit').addEventListener('click', async function() {
   var spot = spots.find(function(s) { return s.id === activeSpotId; });
   if (!spot) return;
+  var submitBtn = document.getElementById('request-delete-submit');
+  if (submitBtn.disabled) return;
+  submitBtn.disabled = true;
   var reason = document.getElementById('request-delete-reason').value.trim();
   var ins = await db.from('deletion_requests').insert({
     spot_id:      spot.id,
@@ -678,6 +682,7 @@ document.getElementById('request-delete-submit').addEventListener('click', async
     reason:       reason,
     requested_by: currentUserId
   });
+  submitBtn.disabled = false;
   if (ins.error) { toast('Request failed: ' + ins.error.message, 'error'); return; }
   document.getElementById('request-delete-overlay').classList.remove('open');
   toast('Deletion request submitted. An admin will review it.');
@@ -857,12 +862,14 @@ async function init() {
   await migrateLocalStorage();
 
   var fetchRes = await db.from('spots').select('*').order('date_added', { ascending: false });
+  var loadingEl = document.getElementById('loading-state');
   if (fetchRes.error) {
     var cached = loadCachedSpots();
     if (cached) {
       spots = cached;
       toast('Offline — showing spots from your last visit.', 'error');
     } else {
+      if (loadingEl) loadingEl.style.display = 'none';
       toast('Failed to load spots: ' + fetchRes.error.message, 'error');
       return;
     }
@@ -870,6 +877,7 @@ async function init() {
     spots = fetchRes.data || [];
     cacheSpots(spots);
   }
+  if (loadingEl) loadingEl.style.display = 'none';
 
   spots.forEach(addMarkerForSpot);
   renderSpotsList();

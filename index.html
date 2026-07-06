@@ -39,7 +39,11 @@
       <button class="filter-tag" data-tag="photography">Photography</button>
     </div>
     <div id="spots-list">
-      <div class="empty-state" id="empty-state">
+      <div class="empty-state" id="loading-state">
+        <span class="spinner"></span>
+        <span>Loading spots…</span>
+      </div>
+      <div class="empty-state" id="empty-state" style="display:none">
         <i class="fa-solid fa-map-pin"></i>
         <span>No spots yet.<br>Click the map to add one!</span>
       </div>
