@@ -25,6 +25,8 @@ Anyone can add, edit, or request deletion of a spot (community-maintained map). 
 - **Offline-capable app shell** — a service worker (`sw.js`) caches the map UI, styles, and vendored libraries so the app still loads when connectivity drops mid-flight; a web app manifest (`manifest.json`) makes it installable to a home screen
 - **Offline spot browsing** — the last-fetched spot list is cached to `localStorage`, so if the initial load happens with no connection, the map still shows every spot from your last visit (read-only until you're back online)
 - **Shareable spot links** — the share icon in a spot's detail panel copies a direct link (`#spot=<id>`) that opens straight to that spot on the map
+- **Locate me / sort by distance** — the crosshair button next to search uses your browser's geolocation to drop a "you are here" marker, sort the sidebar list nearest-first, and label each card with its distance
+- **Drag-to-reposition pin** — the Add/Edit modal shows a draggable marker at the spot's location so you can fine-tune the exact pin position instead of only pasting coordinates
 
 ### Spot Fields
 | Field | Type | Notes |

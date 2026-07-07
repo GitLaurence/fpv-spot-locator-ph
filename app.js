@@ -118,6 +118,36 @@ function getIconForSpot(spot) {
   return getIconForColor(DEFAULT_PIN_COLOR);
 }
 
+// ── Draggable pending-location marker (add/edit modal) ─────────────────────────
+const PENDING_PIN_COLOR = '#3182eb';
+let pendingMarker = null;
+
+function updatePendingCoordsText(latlng) {
+  document.getElementById('modal-coords').textContent = latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6);
+}
+
+function showPendingMarker(latlng) {
+  if (pendingMarker) {
+    pendingMarker.setLatLng(latlng);
+    return;
+  }
+  pendingMarker = L.marker(latlng, {
+    icon: getIconForColor(PENDING_PIN_COLOR),
+    draggable: true,
+    autoPan: true,
+    zIndexOffset: 1000,
+  }).addTo(map).bindTooltip('Drag to fine-tune location', { className: 'spot-tooltip', direction: 'top', offset: [0, -10] });
+  pendingMarker.on('drag', function() {
+    var ll = pendingMarker.getLatLng();
+    pendingLatLng = { lat: ll.lat, lng: ll.lng };
+    updatePendingCoordsText(ll);
+  });
+}
+
+function hidePendingMarker() {
+  if (pendingMarker) { pendingMarker.remove(); pendingMarker = null; }
+}
+
 const markerMap = {};
 
 function addMarkerForSpot(spot) {
@@ -211,6 +241,8 @@ function openModal(spot) {
   var latlng = spot ? { lat: spot.lat, lng: spot.lng } : pendingLatLng;
   document.getElementById('modal-coords').textContent =
     latlng ? (latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6)) : 'Click a location on the map first';
+  document.getElementById('modal-coords-hint').style.display = latlng ? 'block' : 'none';
+  if (latlng) showPendingMarker(latlng); else hidePendingMarker();
   document.getElementById('gmaps-coords').value = '';
   document.getElementById('spot-website').value = '';
   document.getElementById('spot-name').value   = spot ? spot.name : '';
@@ -231,6 +263,7 @@ function closeModal() {
   pendingLatLng = null;
   editingId     = null;
   document.getElementById('spot-photos').value = '';
+  hidePendingMarker();
 }
 
 document.getElementById('modal-close-btn').addEventListener('click', closeModal);
@@ -278,6 +311,8 @@ document.getElementById('gmaps-apply-btn').addEventListener('click', function() 
 
   pendingLatLng = coords;
   document.getElementById('modal-coords').textContent = coords.lat.toFixed(6) + ', ' + coords.lng.toFixed(6);
+  document.getElementById('modal-coords-hint').style.display = 'block';
+  showPendingMarker(coords);
   map.setView([coords.lat, coords.lng], Math.max(map.getZoom(), 14));
   toast('Coordinates applied.', 'success');
 });
@@ -427,15 +462,63 @@ async function saveSpot() {
   }
 }
 
+// ── Locate me / distance sort ───────────────────────────────────────────────────
+let userLocation       = null;
+let userLocationMarker = null;
+
+function distanceKm(lat1, lng1, lat2, lng2) {
+  var R    = 6371;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(km) {
+  return km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+}
+
+document.getElementById('locate-me-btn').addEventListener('click', function() {
+  if (!navigator.geolocation) { toast('Geolocation is not supported by your browser.', 'error'); return; }
+  var btn = this;
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    btn.classList.add('active');
+    btn.disabled = false;
+    if (userLocationMarker) {
+      userLocationMarker.setLatLng(userLocation);
+    } else {
+      userLocationMarker = L.circleMarker(userLocation, {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#3182eb', fillOpacity: 1,
+      }).addTo(map).bindTooltip('You are here', { className: 'spot-tooltip', direction: 'top', offset: [0, -8] });
+    }
+    map.flyTo(userLocation, Math.max(map.getZoom(), 12));
+    renderSpotsList();
+    toast('Spots sorted by distance from you.');
+  }, function(err) {
+    btn.disabled = false;
+    toast('Could not get your location: ' + err.message, 'error');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+});
+
 // ── Spot list ─────────────────────────────────────────────────────────────────
 function filteredSpots() {
-  return spots.filter(function(s) {
+  var list = spots.filter(function(s) {
     var matchSearch = !searchQuery
       || s.name.toLowerCase().includes(searchQuery)
       || (s.description || '').toLowerCase().includes(searchQuery);
     var matchTags = filterTags.size === 0 || (s.tags || []).some(function(t) { return filterTags.has(t); });
     return matchSearch && matchTags;
   });
+  if (userLocation) {
+    list.sort(function(a, b) {
+      return distanceKm(userLocation.lat, userLocation.lng, a.lat, a.lng) -
+             distanceKm(userLocation.lat, userLocation.lng, b.lat, b.lng);
+    });
+  }
+  return list;
 }
 
 function renderSpotsList() {
@@ -473,6 +556,14 @@ function renderSpotsList() {
     dateEl.textContent = new Date(spot.date_added).toLocaleDateString('en-PH',
       { year: 'numeric', month: 'short', day: 'numeric' });
 
+    var distEl = null;
+    if (userLocation) {
+      distEl = document.createElement('div');
+      distEl.className = 'card-distance';
+      distEl.innerHTML = '<i class="fa-solid fa-location-dot"></i> ' +
+        formatDistance(distanceKm(userLocation.lat, userLocation.lng, spot.lat, spot.lng)) + ' away';
+    }
+
     var tagsEl = document.createElement('div');
     tagsEl.className = 'card-tags';
     (spot.tags || []).forEach(function(t) {
@@ -481,7 +572,9 @@ function renderSpotsList() {
       tagsEl.appendChild(chip);
     });
 
-    card.appendChild(nameEl); card.appendChild(dateEl); card.appendChild(tagsEl);
+    card.appendChild(nameEl); card.appendChild(dateEl);
+    if (distEl) card.appendChild(distEl);
+    card.appendChild(tagsEl);
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', 'View spot: ' + spot.name);
