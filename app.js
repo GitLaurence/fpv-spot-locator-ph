@@ -157,6 +157,24 @@ function toast(msg, type = 'success') {
   setTimeout(() => el.remove(), 3200);
 }
 
+// Persistent toast with a Retry action — stays until retried or dismissed,
+// used when the initial spot load fails and there's nothing else on screen
+// to tell the user how to recover.
+function retryToast(msg, onRetry) {
+  const el = document.createElement('div');
+  el.className = 'toast error toast-retry';
+  const text = document.createElement('span');
+  text.textContent = msg;
+  const btn = document.createElement('button');
+  btn.className = 'toast-retry-btn';
+  btn.textContent = 'Retry';
+  btn.addEventListener('click', () => { el.remove(); onRetry(); });
+  el.appendChild(text);
+  el.appendChild(btn);
+  document.getElementById('toast-container').appendChild(el);
+  return el;
+}
+
 function statusToast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
@@ -187,7 +205,8 @@ function showConfirm(msg) {
 }
 
 // ── Connection status ─────────────────────────────────────────────────────────
-let wasConnected = false;
+let wasConnected     = false;
+let initialLoadDone  = false; // once spots have rendered once, reconnect blips shouldn't re-block the whole screen
 function setStatus(connected) {
   const dot      = document.getElementById('status-dot');
   const text     = document.getElementById('status-text');
@@ -195,14 +214,49 @@ function setStatus(connected) {
   if (!dot) return;
   dot.className    = 'status-dot ' + (connected ? 'online' : 'offline');
   text.textContent = connected ? 'Live' : 'Connecting…';
-  overlay.classList.toggle('open', !connected);
+  if (!initialLoadDone) overlay.classList.toggle('open', !connected);
   if (connected && !wasConnected) {
     statusToast('Connected — live updates enabled.', 'success');
+  } else if (!connected && wasConnected) {
+    statusToast('Realtime connection lost — reconnecting…', 'error');
   }
   wasConnected = connected;
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
+// While editing, the spot's existing map marker becomes draggable so the pin
+// can be repositioned without retyping/pasting coordinates.
+let dragEditingSpotId = null;
+let editDragHandler   = null;
+
+function enableEditDrag(spot) {
+  var marker = markerMap[spot.id];
+  if (!marker) return;
+  dragEditingSpotId = spot.id;
+  marker.dragging.enable();
+  editDragHandler = function() {
+    var ll = marker.getLatLng();
+    pendingLatLng = { lat: ll.lat, lng: ll.lng };
+    document.getElementById('modal-coords').textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
+  };
+  marker.on('dragend', editDragHandler);
+}
+
+function disableEditDrag() {
+  if (!dragEditingSpotId) return;
+  var marker = markerMap[dragEditingSpotId];
+  if (marker) {
+    marker.dragging.disable();
+    if (editDragHandler) marker.off('dragend', editDragHandler);
+    // Revert to the spot's last-saved position — if the edit was cancelled
+    // (rather than saved), the drag should not leave the marker displaced.
+    var current = spots.find(function(s) { return s.id === dragEditingSpotId; });
+    if (current) marker.setLatLng([current.lat, current.lng]);
+  }
+  dragEditingSpotId = null;
+  editDragHandler   = null;
+}
+
 function openModal(spot) {
   pendingPhotos = spot
     ? spot.photos.map((url, i) => ({ dataUrl: url, name: 'photo-' + i, uploaded: true }))
@@ -221,12 +275,16 @@ function openModal(spot) {
     cb.checked = spot ? spot.tags.includes(cb.value) : false;
   });
   renderPhotoPreview();
+  var dragHint = document.getElementById('modal-drag-hint');
+  if (dragHint) dragHint.style.display = spot ? '' : 'none';
+  if (spot) enableEditDrag(spot);
   spotModal.classList.add('open');
   document.getElementById('spot-name').focus();
 }
 
 function closeModal() {
   spotModal.classList.remove('open');
+  disableEditDrag();
   pendingPhotos = [];
   pendingLatLng = null;
   editingId     = null;
@@ -770,7 +828,12 @@ function subscribeToSpots() {
       renderSpotsList();
       cacheSpots(spots);
     })
-    .subscribe(function(status) { setStatus(status === 'SUBSCRIBED'); });
+    .subscribe(function(status) {
+      setStatus(status === 'SUBSCRIBED');
+      // Spots are already loaded/rendered by this point — later reconnect
+      // attempts should only nudge the status dot, not re-block the screen.
+      initialLoadDone = true;
+    });
 }
 
 // ── localStorage migration (one-time) ─────────────────────────────────────────
@@ -845,13 +908,21 @@ if ('serviceWorker' in navigator) {
 async function init() {
   setStatus(false);
 
-  var sessionRes = await db.auth.getSession();
-  if (sessionRes.data.session) {
-    currentUserId = sessionRes.data.session.user.id;
-  } else {
-    var anonRes = await db.auth.signInAnonymously();
-    if (anonRes.error) { toast('Auth error: ' + anonRes.error.message, 'error'); return; }
-    currentUserId = anonRes.data.user.id;
+  try {
+    var sessionRes = await db.auth.getSession();
+    if (sessionRes.data.session) {
+      currentUserId = sessionRes.data.session.user.id;
+    } else {
+      var anonRes = await db.auth.signInAnonymously();
+      if (anonRes.error) throw anonRes.error;
+      currentUserId = anonRes.data.user.id;
+    }
+  } catch (err) {
+    // Nothing loaded yet — don't leave the user staring at a spinner forever.
+    initialLoadDone = true;
+    document.getElementById('connecting-overlay').classList.remove('open');
+    retryToast('Could not connect: ' + err.message, init);
+    return;
   }
 
   await migrateLocalStorage();
@@ -861,9 +932,15 @@ async function init() {
     var cached = loadCachedSpots();
     if (cached) {
       spots = cached;
+      initialLoadDone = true;
+      document.getElementById('connecting-overlay').classList.remove('open');
       toast('Offline — showing spots from your last visit.', 'error');
     } else {
-      toast('Failed to load spots: ' + fetchRes.error.message, 'error');
+      // No cache to fall back on — close the overlay so the error toast
+      // (and a way to retry) is actually visible instead of hidden behind it.
+      initialLoadDone = true;
+      document.getElementById('connecting-overlay').classList.remove('open');
+      retryToast('Failed to load spots: ' + fetchRes.error.message, init);
       return;
     }
   } else {
