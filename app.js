@@ -343,13 +343,53 @@ spotModal.addEventListener('click', function(e) { if (e.target === spotModal) cl
 document.getElementById('modal-save-btn').addEventListener('click', saveSpot);
 
 // ── Photo file input ──────────────────────────────────────────────────────────
+// Phone camera photos routinely come in at 3000-4000px / several MB, but the
+// UI only ever displays them as a small thumbnail or a panel-width carousel
+// image — downloading the original every time is the main thing making
+// photos feel slow to load. Downscale + re-encode client-side before upload
+// so every future page load fetches a file that's actually sized for use.
+var MAX_PHOTO_DIMENSION = 1600;
+var JPEG_QUALITY = 0.82;
+
+function compressImage(file, maxDim, quality) {
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) { reject(new Error('Could not read image dimensions')); return; }
+      var scale = Math.min(1, maxDim / Math.max(w, h));
+      var outW = Math.round(w * scale), outH = Math.round(h * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      canvas.getContext('2d').drawImage(img, 0, 0, outW, outH);
+      // Keep PNGs lossless (screenshots/graphics often rely on transparency);
+      // everything else re-encodes as JPEG, which compresses photos far better.
+      var keepPng = file.type === 'image/png';
+      canvas.toBlob(function(blob) {
+        if (!blob) { reject(new Error('Compression failed')); return; }
+        resolve(blob);
+      }, keepPng ? 'image/png' : 'image/jpeg', keepPng ? undefined : quality);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
+    img.src = url;
+  });
+}
+
 document.getElementById('spot-photos').addEventListener('change', async function(e) {
   var files = Array.from(e.target.files);
   var remaining = 5 - pendingPhotos.length;
   if (files.length > remaining) toast('Max 5 photos. ' + remaining + ' slot(s) left.', 'error');
   for (var f of files.slice(0, remaining)) {
     if (f.size > 20 * 1024 * 1024) { toast(f.name + ' exceeds 20 MB, skipped.', 'error'); continue; }
-    var dataUrl = await readFileAsDataUrl(f);
+    var compressed;
+    try {
+      compressed = await compressImage(f, MAX_PHOTO_DIMENSION, JPEG_QUALITY);
+    } catch (err) {
+      compressed = f; // fall back to the original file if compression isn't possible
+    }
+    var dataUrl = await readFileAsDataUrl(compressed);
     pendingPhotos.push({ dataUrl: dataUrl, name: f.name, uploaded: false });
   }
   renderPhotoPreview();
@@ -519,7 +559,7 @@ function renderSpotsList() {
     if (spot.photos && spot.photos.length > 0) {
       var img = document.createElement('img');
       img.className = 'card-thumb'; img.src = spot.photos[0]; img.alt = spot.name;
-      img.loading = 'lazy';
+      img.loading = 'lazy'; img.decoding = 'async';
       card.appendChild(img);
     }
 
@@ -621,10 +661,19 @@ function renderDetailPhotos(photos) {
 
   photos.forEach(function(url, i) {
     var img = document.createElement('img');
-    img.src = url; img.alt = 'Photo ' + (i + 1);
-    img.loading = 'lazy';
+    img.alt = 'Photo ' + (i + 1);
+    img.decoding = 'async';
+    // The active photo is visible immediately, so fetch it eagerly at high
+    // priority; the rest of the carousel can wait until they're paged to.
+    if (i === photoIndex) {
+      img.loading = 'eager';
+      img.fetchPriority = 'high';
+      img.classList.add('active');
+    } else {
+      img.loading = 'lazy';
+    }
+    img.src = url;
     img.style.cursor = 'zoom-in';
-    if (i === photoIndex) img.classList.add('active');
     img.addEventListener('click', function() { openLightbox(photos, i); });
     container.insertBefore(img, prev);
     if (photos.length > 1) {
