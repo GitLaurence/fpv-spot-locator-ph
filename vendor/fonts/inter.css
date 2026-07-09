@@ -1,0 +1,24 @@
+/* Self-hosted subset of Inter (latin, weights 400/600/700) — replaces the
+   fonts.googleapis.com / fonts.gstatic.com CDN dependency so the UI keeps
+   its intended typeface even when those hosts are unreachable. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('inter-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('inter-latin-700-normal.woff2') format('woff2');
+}

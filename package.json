@@ -1,6 +1,8 @@
 {
   "devDependencies": {
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "@fortawesome/fontawesome-free": "^7.3.0",
+    "@fontsource/inter": "^5.2.8"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0"

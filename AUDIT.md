@@ -1,6 +1,6 @@
 # FPV Spot Locator PH — Build Audit
 
-_Date: 2026-06-10 (statuses last updated 2026-07-05)_
+_Date: 2026-06-10 (statuses last updated 2026-07-09)_
 _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `assets/`_
 
 ---
@@ -35,7 +35,7 @@ _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `a
 | 10 | ⬜ Open | **All spots loaded at once, no pagination** | `app.js` `init()` | `db.from('spots').select('*')` fetches the entire table on every page load. Fine at current scale, but will degrade as the spot count grows (especially with embedded photo URL arrays). |
 | 11 | ✅ Fixed | **No debounce on search input** | `app.js` search-input handler | Input is now debounced (200ms) before re-filtering/re-rendering the sidebar list. |
 | 12 | ✅ Fixed | **Full marker re-render on update** | `app.js` `updateMarkerForSpot()` | UPDATE events now move/refresh an existing marker in place instead of remove+recreate. |
-| 13 | ⬜ Open | **External CDN dependencies** | `index.html` | Font Awesome and Google Fonts are still loaded from CDNs with no self-hosted fallback. Leaflet/Supabase are vendored, so only icons/fonts are at risk if those CDNs are unreachable. |
+| 13 | ✅ Fixed | **External CDN dependencies** | `index.html`, `admin.html` | Font Awesome and Inter are now vendored (`vendor/fontawesome/`, `vendor/fonts/`) instead of loaded from `cdnjs.cloudflare.com`/`fonts.googleapis.com`. Also caught `admin.html` loading Leaflet from `unpkg.com` instead of the already-vendored copy — switched it to `vendor/leaflet.*`. The service worker now caches all of these for offline use (bumped to `v4`), so the app has zero CDN dependencies left. |
 
 ---
 
