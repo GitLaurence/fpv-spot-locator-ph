@@ -1,7 +1,7 @@
 'use strict';
 
 // Bump this on every deploy that changes a cached file so clients pick up fresh assets.
-const CACHE_NAME = 'fpv-spot-locator-v3';
+const CACHE_NAME = 'fpv-spot-locator-v4';
 
 const APP_SHELL = [
   './',
@@ -17,6 +17,8 @@ const APP_SHELL = [
   './vendor/images/marker-icon.png',
   './vendor/images/marker-icon-2x.png',
   './vendor/images/marker-shadow.png',
+  './vendor/fonts/inter.css',
+  './vendor/fonts/inter-latin.woff2',
   './assets/marker-fpv.svg',
 ];
 

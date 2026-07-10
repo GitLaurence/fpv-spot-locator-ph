@@ -55,9 +55,9 @@ Anyone can add, edit, or request deletion of a spot (community-maintained map). 
 | UI | Vanilla HTML + CSS | Zero build step, fast |
 | Icons | Font Awesome (CDN) | Pin, camera, tag icons |
 | Backend | Supabase (Postgres + Storage + Realtime + Auth) | Shared live data, no custom server to run |
-| Fonts | Google Fonts — Inter | Clean, readable |
+| Fonts | Inter (self-hosted, vendored) | Clean, readable, no Google Fonts round-trip |
 
-No build tools, bundlers, or frameworks are required. `vendor/` contains the pinned Leaflet and Supabase JS client so the app works without any CDN for those two libraries.
+No build tools, bundlers, or frameworks are required. `vendor/` contains the pinned Leaflet and Supabase JS client, plus a self-hosted Inter font subset, so the app works without any CDN except Font Awesome.
 
 ---
 

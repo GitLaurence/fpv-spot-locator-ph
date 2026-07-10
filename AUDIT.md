@@ -35,7 +35,7 @@ _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `a
 | 10 | ⬜ Open | **All spots loaded at once, no pagination** | `app.js` `init()` | `db.from('spots').select('*')` fetches the entire table on every page load. Fine at current scale, but will degrade as the spot count grows (especially with embedded photo URL arrays). |
 | 11 | ✅ Fixed | **No debounce on search input** | `app.js` search-input handler | Input is now debounced (200ms) before re-filtering/re-rendering the sidebar list. |
 | 12 | ✅ Fixed | **Full marker re-render on update** | `app.js` `updateMarkerForSpot()` | UPDATE events now move/refresh an existing marker in place instead of remove+recreate. |
-| 13 | ⬜ Open | **External CDN dependencies** | `index.html` | Font Awesome and Google Fonts are still loaded from CDNs with no self-hosted fallback. Leaflet/Supabase are vendored, so only icons/fonts are at risk if those CDNs are unreachable. |
+| 13 | 🟡 Partial | **External CDN dependencies** | `index.html`, `admin.html` | Inter is now self-hosted (`vendor/fonts/`) and cached by the service worker, so the Google Fonts round-trip is gone. Font Awesome is still loaded from cdnjs with no self-hosted fallback — icons disappear if that CDN is unreachable. `admin.html` also still loads Leaflet from unpkg instead of the vendored copy `index.html` uses. |
 
 ---
 
