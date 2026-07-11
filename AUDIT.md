@@ -1,6 +1,6 @@
 # FPV Spot Locator PH — Build Audit
 
-_Date: 2026-06-10 (statuses last updated 2026-07-05)_
+_Date: 2026-06-10 (statuses last updated 2026-07-11)_
 _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `assets/`_
 
 ---
@@ -44,7 +44,7 @@ _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `a
 | # | Status | Issue | Location | Details |
 |---|--------|-------|----------|---------|
 | 14 | ✅ Fixed | **Icon-only buttons lack `aria-label`** | `index.html` | Close buttons, FAB, photo nav, and lightbox controls now carry `aria-label` in addition to `title`. |
-| 15 | 🟡 Partial | **No keyboard navigation for the map/spot list** | App-wide | Spot list cards now handle `keydown` (Enter/Space) for keyboard activation. Map markers themselves are still mouse/touch-only — Leaflet doesn't expose keyboard focus on markers out of the box. |
+| 15 | ✅ Fixed | **No keyboard navigation for the map/spot list** | `app.js` `addMarkerForSpot()`/`updateMarkerForSpot()`, `style.css` | Spot list cards handle `keydown` (Enter/Space) for keyboard activation. Map markers are focusable by default in Leaflet (tabindex + `role="button"`), but Enter/Space didn't do anything and the accessible name was the generic "Marker" — markers now get `alt`/`title` set to the spot name, a `keydown` handler that opens the detail panel on Enter/Space, and a visible focus outline. |
 | 16 | ✅ Fixed | **No "drag to reposition" when editing a spot** | `app.js` `enableEditDrag()`/`disableEditDrag()`, `openModal()` | Opening the edit modal now makes that spot's existing marker draggable; `dragend` updates the pending coordinates and the modal's coords display live. Cancelling the edit snaps the marker back to its last-saved position. |
 | 17 | ✅ Fixed | **No loading/empty states for slow connections; UI could get stuck on "Connecting…" forever** | `app.js` `init()`, `setStatus()` | The "Connecting to live database…" overlay now doubles as the initial loading state (it was already up during the fetch, but previously never closed — and hid the error toast — if the fetch failed and no offline cache existed). It's now explicitly dismissed on every init outcome, replaced by a persistent **Retry** toast on failure, and (via a new `initialLoadDone` flag) no longer re-blocks the whole screen on later realtime reconnect blips once spots have already loaded. |
 | 18 | ✅ Fixed | **No offline support / PWA manifest** | `sw.js`, `manifest.json`, `app.js` | Service worker caches the app shell, `manifest.json` makes the app installable, and the last-fetched spot list is cached to `localStorage` for offline browsing. |

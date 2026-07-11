@@ -121,10 +121,24 @@ function getIconForSpot(spot) {
 const markerMap = {};
 
 function addMarkerForSpot(spot) {
-  const marker = L.marker([spot.lat, spot.lng], { icon: getIconForSpot(spot) })
+  const marker = L.marker([spot.lat, spot.lng], {
+    icon: getIconForSpot(spot),
+    alt: spot.name,
+    title: spot.name,
+  })
     .addTo(map)
     .bindTooltip(spot.name, { className: 'spot-tooltip', direction: 'top', offset: [0, -10] });
   marker.on('click', () => openDetailPanel(spot.id));
+  // Leaflet markers are focusable (tabindex + role=button) by default, but
+  // Enter/Space don't activate them out of the box — wire that up so the
+  // map is keyboard-navigable, not just mouse/touch.
+  marker.on('keydown', e => {
+    var code = e.originalEvent.keyCode;
+    if (code === 13 || code === 32) {
+      e.originalEvent.preventDefault();
+      openDetailPanel(spot.id);
+    }
+  });
   markerMap[spot.id] = marker;
 }
 
@@ -140,6 +154,10 @@ function updateMarkerForSpot(spot) {
   marker.setLatLng([spot.lat, spot.lng]);
   marker.setIcon(getIconForSpot(spot));
   marker.setTooltipContent(spot.name);
+  marker.options.alt = spot.name;
+  marker.options.title = spot.name;
+  var el = marker.getElement();
+  if (el) { el.alt = spot.name; el.title = spot.name; }
 }
 
 map.on('click', e => {
