@@ -1,6 +1,6 @@
 # FPV Spot Locator PH — Build Audit
 
-_Date: 2026-06-10 (statuses last updated 2026-07-11)_
+_Date: 2026-06-10 (statuses last updated 2026-07-12)_
 _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `assets/`_
 
 ---
@@ -13,6 +13,7 @@ _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `a
 | 2 | ✅ Fixed | **Orphaned photos in Supabase Storage** | `app.js` `detail-delete` handler (~line 523-535) | Deleting a spot removes the DB row but never deletes its uploaded photos from the `spot-photos` bucket. Storage usage grows indefinitely. Same applies when a photo is removed during edit (old photo stays in storage). |
 | 3 | 🟡 Partial | **Shortened Google Maps links (`maps.app.goo.gl`, `goo.gl`) cannot be parsed** | `app.js` `parseGoogleMapsCoords()` | Still blocked by CORS on client-side redirect following. The app now opens the short link in a new tab and prompts the user to paste the resolved URL back — a manual workaround, not a true fix. |
 | 4 | ⬜ Open | **`renderPhotoPreview` always shows "uploaded" photos as already-saved** | `app.js` `openModal()` (~line 120-122) | When editing, existing photo URLs are marked `uploaded: true` and reused as-is in `uploadPendingPhotos()`. If a user removes and re-adds the *same* photo file during an edit, it gets re-uploaded as a duplicate object (minor storage bloat, not a correctness bug, but worth noting alongside #2). |
+| 23 | ✅ Fixed | **Description/Safety fields have no client-side length limit, unlike the DB constraint** | `index.html` (`#spot-desc`, `#spot-safety`); `app.js` `saveSpot()` | The DB caps `description`/`safety` at 1000 chars (`spots_description_len`/`spots_safety_len`), but the textareas had no `maxlength`. A user pasting a long description would have photos uploaded first, then hit a raw Postgres constraint-violation error on save. Added `maxlength="1000"` to both fields plus a client-side length check in `saveSpot()` that fails fast with a friendly toast before any photo upload starts. |
 
 ---
 

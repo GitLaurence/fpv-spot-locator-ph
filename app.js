@@ -488,6 +488,11 @@ async function saveSpot() {
   var name = document.getElementById('spot-name').value.trim();
   if (!name) { toast('Spot name is required.', 'error'); return; }
 
+  var descVal   = document.getElementById('spot-desc').value.trim();
+  var safetyVal = document.getElementById('spot-safety').value.trim();
+  if (descVal.length > 1000)   { toast('Description must be 1000 characters or fewer.', 'error'); return; }
+  if (safetyVal.length > 1000) { toast('Safety / Legality must be 1000 characters or fewer.', 'error'); return; }
+
   var saveBtn = document.getElementById('modal-save-btn');
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<span class="spinner"></span> Saving…';
@@ -500,8 +505,8 @@ async function saveSpot() {
     var payload = {
       id:          editingId || uuid(),
       name:        name,
-      description: document.getElementById('spot-desc').value.trim(),
-      safety:      document.getElementById('spot-safety').value.trim(),
+      description: descVal,
+      safety:      safetyVal,
       best_time:   document.getElementById('spot-time').value,
       tags:        tags,
       photos:      photoUrls,
