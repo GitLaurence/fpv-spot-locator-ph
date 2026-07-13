@@ -16,6 +16,7 @@ let currentUserId = null;
 let pendingLatLng = null;
 let editingId     = null;
 let pendingPhotos = [];
+let removedSavedPhotos = []; // saved photos unselected mid-edit; restored (not re-uploaded) if the same file is re-added
 let activeSpotId  = null;
 let photoIndex    = 0;
 let filterTags    = new Set();
@@ -279,6 +280,7 @@ function openModal(spot) {
   pendingPhotos = spot
     ? spot.photos.map((url, i) => ({ dataUrl: url, name: 'photo-' + i, uploaded: true }))
     : [];
+  removedSavedPhotos = [];
   document.getElementById('modal-title').textContent = spot ? 'Edit Spot' : 'Add New Spot';
   var latlng = spot ? { lat: spot.lat, lng: spot.lng } : pendingLatLng;
   document.getElementById('modal-coords').textContent =
@@ -304,6 +306,7 @@ function closeModal() {
   spotModal.classList.remove('open');
   disableEditDrag();
   pendingPhotos = [];
+  removedSavedPhotos = [];
   pendingLatLng = null;
   editingId     = null;
   document.getElementById('spot-photos').value = '';
@@ -435,9 +438,38 @@ function renderPhotoPreview() {
     var btn = document.createElement('button');
     btn.className = 'photo-remove';
     btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    btn.addEventListener('click', function() { pendingPhotos.splice(i, 1); renderPhotoPreview(); });
+    btn.addEventListener('click', function() {
+      pendingPhotos.splice(i, 1);
+      // Already-saved photos are only actually deleted from storage on save —
+      // stash them so the user can restore instead of re-adding the file,
+      // which would upload a redundant duplicate object.
+      if (p.uploaded) removedSavedPhotos.push(p);
+      renderPhotoPreview();
+    });
     wrap.appendChild(img); wrap.appendChild(btn);
     grid.appendChild(wrap);
+  });
+  renderRemovedPhotosStrip();
+}
+
+function renderRemovedPhotosStrip() {
+  var strip = document.getElementById('removed-photos-strip');
+  strip.innerHTML = '';
+  if (!removedSavedPhotos.length) { strip.style.display = 'none'; return; }
+  strip.style.display = '';
+  removedSavedPhotos.forEach(function(p, i) {
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'removed-photo-chip';
+    chip.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Undo remove';
+    chip.title = 'Restore this photo instead of re-uploading it';
+    chip.addEventListener('click', function() {
+      if (pendingPhotos.length >= 5) { toast('Max 5 photos — remove one first.', 'error'); return; }
+      removedSavedPhotos.splice(i, 1);
+      pendingPhotos.push(p);
+      renderPhotoPreview();
+    });
+    strip.appendChild(chip);
   });
 }
 

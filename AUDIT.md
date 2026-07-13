@@ -1,6 +1,6 @@
 # FPV Spot Locator PH — Build Audit
 
-_Date: 2026-06-10 (statuses last updated 2026-07-11)_
+_Date: 2026-06-10 (statuses last updated 2026-07-13)_
 _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `assets/`_
 
 ---
@@ -12,7 +12,7 @@ _Scope: `index.html`, `app.js`, `style.css`, `supabase-setup.sql`, `vendor/`, `a
 | 1 | ✅ Fixed | **Editing a spot ignores updated coordinates** | `app.js` `saveSpot()` (~line 281-282) | When `editingId` is set, `lat`/`lng` are always taken from `existing.lat/lng`, even if the user pasted new Google Maps coordinates via the new "Use" button. Pasted coordinates are silently discarded on edit. |
 | 2 | ✅ Fixed | **Orphaned photos in Supabase Storage** | `app.js` `detail-delete` handler (~line 523-535) | Deleting a spot removes the DB row but never deletes its uploaded photos from the `spot-photos` bucket. Storage usage grows indefinitely. Same applies when a photo is removed during edit (old photo stays in storage). |
 | 3 | 🟡 Partial | **Shortened Google Maps links (`maps.app.goo.gl`, `goo.gl`) cannot be parsed** | `app.js` `parseGoogleMapsCoords()` | Still blocked by CORS on client-side redirect following. The app now opens the short link in a new tab and prompts the user to paste the resolved URL back — a manual workaround, not a true fix. |
-| 4 | ⬜ Open | **`renderPhotoPreview` always shows "uploaded" photos as already-saved** | `app.js` `openModal()` (~line 120-122) | When editing, existing photo URLs are marked `uploaded: true` and reused as-is in `uploadPendingPhotos()`. If a user removes and re-adds the *same* photo file during an edit, it gets re-uploaded as a duplicate object (minor storage bloat, not a correctness bug, but worth noting alongside #2). |
+| 4 | ✅ Fixed | **`renderPhotoPreview` always shows "uploaded" photos as already-saved** | `app.js` `openModal()`/`renderPhotoPreview()` | When editing, existing photo URLs are marked `uploaded: true` and reused as-is in `uploadPendingPhotos()`. Removing one during an edit now stashes it (with an "Undo remove" chip) instead of discarding it, so restoring it reuses the original URL — re-adding the same file via the file picker no longer re-uploads a redundant duplicate object. |
 
 ---
 

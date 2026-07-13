@@ -390,6 +390,20 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 }
 .photo-count { font-size: 0.75rem; color: var(--text-muted); }
 
+.removed-photos-strip { display: none; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.removed-photo-chip {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.removed-photo-chip:hover { color: var(--red); border-color: var(--red); }
+
 /* ── Detail Panel ── */
 #detail-panel {
   width: var(--detail-w);
