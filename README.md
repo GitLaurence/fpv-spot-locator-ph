@@ -53,11 +53,11 @@ Anyone can add, edit, or request deletion of a spot (community-maintained map). 
 | Map | Leaflet.js (vendored) | Lightweight, free, no API key |
 | Tiles | OpenStreetMap / Esri satellite | Free, no key, good PH coverage |
 | UI | Vanilla HTML + CSS | Zero build step, fast |
-| Icons | Font Awesome (CDN) | Pin, camera, tag icons |
+| Icons | Font Awesome (vendored) | Pin, camera, tag icons |
 | Backend | Supabase (Postgres + Storage + Realtime + Auth) | Shared live data, no custom server to run |
-| Fonts | Google Fonts — Inter | Clean, readable |
+| Fonts | Google Fonts — Inter (CDN) | Clean, readable |
 
-No build tools, bundlers, or frameworks are required. `vendor/` contains the pinned Leaflet and Supabase JS client so the app works without any CDN for those two libraries.
+No build tools, bundlers, or frameworks are required. `vendor/` contains the pinned Leaflet, Supabase JS client, and Font Awesome (solid + regular subsets only) so the app — and its offline service-worker cache — works without any CDN for those. Google Fonts is still loaded from its CDN; `font-family` falls back to system `sans-serif` if it's unreachable.
 
 ---
 
